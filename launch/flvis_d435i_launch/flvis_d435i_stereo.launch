@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<launch>
+
+<!--Input######################################################################################################-->
+    <include file="$(find mlmapping)/launch/flvis_d435i_launch/d435i_stereo.launch"/>
+    <node name="realsense_fix_global_time"
+              pkg="dynamic_reconfigure"
+              type="dynparam"
+              args="set /camera/motion_module global_time_enabled false"
+              output="screen" />
+
+<!--FLVIS######################################################################################################-->
+    <arg name="node_start_delay"  default="3.0" />
+    <param name="/yamlconfigfile" type="string" value="$(find mlmapping)/launch/flvis_d435i_launch/sn943222072828_stereo.yaml"/>
+
+    <!-- Manager -->
+    <node pkg="nodelet" type="nodelet"
+          name="flvis_nodelet_manager" args="manager" output="screen"
+          launch-prefix="bash -c 'sleep 0; $0 $@' ">
+          <param name="num_worker_threads" value="2" />
+    </node>
+
+    <!-- TrackingNode -->
+    <node pkg="nodelet" type="nodelet" args="load flvis/TrackingNodeletClass flvis_nodelet_manager"
+        name="TrackingNodeletClass_loader" output="screen"
+        launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' ">
+        <remap from="/vo/input_image_0"  to="/camera/infra1/image_rect_raw"/>
+        <remap from="/vo/input_image_1"  to="/camera/infra2/image_rect_raw"/>
+        <remap from="/imu"               to="/camera/imu"/>
+    </node>
+
+</launch>
+
+
+
+
+
+

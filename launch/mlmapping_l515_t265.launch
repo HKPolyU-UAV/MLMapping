@@ -1,0 +1,52 @@
+<?xml version="1.0"?>
+<launch>
+<!--Input######################################################################################################-->
+    <include file="$(find mlmapping)/launch/rs_launch/rs_l515.launch"/>
+    <include file="$(find mlmapping)/launch/rs_launch/rs_t265.launch"/>
+
+    <node pkg="mlmapping" type="republish_record" name="t265topose" output="screen">
+    <param name="sub_type" type="string" value="Odometry" />
+    <param name="sub_topic" type="string" value="/camera2/odom/sample" />
+    <param name="repub_type" type="string" value="PoseStamped" />
+    <param name="repub_topic" type="string" value="/mavros/local_position/pose" />
+    <param name="output_file_path" type="string" value="0" />
+    </node>
+
+<!--rviz#######################################################################################################-->
+<!--    <node type="rviz" name="rviz" pkg="rviz" args="-d $(find mlmapping)/launch/config/mlmapping.rviz" />-->
+
+    <arg name="node_start_delay"  default="2.0" />
+
+<!--visualization##############################################################################################-->
+
+    <node pkg="mlmapping" type="visualization" name="visualization" output="screen" />
+
+<!--mlmapping##################################################################################################-->
+    <param name="/mlmapping_configfile" type="string" value="$(find mlmapping)/launch/config/l515_t265.yaml"/>
+
+    <!-- Manager -->
+    <node pkg="nodelet" type="nodelet"
+          name="mlmapping_nodelet_manager" args="manager" output="screen">
+          <param name="num_worker_threads" value="4" />
+    </node>
+
+    <node pkg="nodelet" type="nodelet" args="load mlmapping/AwarenessMapNodeletClass mlmapping_nodelet_manager"
+        name="awareness_loader" output="screen"
+        launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' ">
+        <remap from="/mlmapping/pc"          to="/camera1/depth/color/points"/>
+        <remap from="/mlmapping/pose"        to="/mavros/local_position/pose"/>
+    </node>
+
+    <node pkg="nodelet" type="nodelet" args="load mlmapping/LocalMapNodeletClass mlmapping_nodelet_manager"
+        name="localmap_loader" output="screen"
+        launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' ">
+    </node>
+
+</launch>
+
+
+
+
+
+
+

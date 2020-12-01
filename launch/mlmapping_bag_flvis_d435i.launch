@@ -1,0 +1,42 @@
+<?xml version="1.0"?>
+<launch>
+    <param name ="/use_sim_time" value="true"/>
+    <!--sim_planner1-->
+<!--Input######################################################################################################-->
+    <node pkg="rosbag" type="play" name="rosbag" output="log" args="$(find mlmapping)/bag/lab.bag -r3 --clock">
+    </node>
+
+<!--rviz#######################################################################################################-->
+<!--    <node type="rviz" name="rviz" pkg="rviz" args="-d $(find mlmapping)/launch/config/mlmapping.rviz" />-->
+
+<!--visualization##############################################################################################-->
+    <node pkg="mlmapping" type="visualization" name="visualization" output="log" />
+
+<!--mlmapping##################################################################################################-->
+    <arg name="node_start_delay"  default="1.0" />
+    <param name="/mlmapping_configfile" type="string" value="$(find mlmapping)/launch/config/d435i_mit_flvis.yaml"/>
+
+    <!-- Manager -->
+    <node pkg="nodelet" type="nodelet"
+          name="mlmapping_nodelet_manager" args="manager" output="screen">
+          <param name="num_worker_threads" value="4" />
+    </node>
+
+    <node pkg="nodelet" type="nodelet" args="load mlmapping/AwarenessMapNodeletClass mlmapping_nodelet_manager"
+        name="awareness_loader" output="screen">
+        <remap from="/mlmapping/pc"          to="/camera/depth/color/points"/>
+        <remap from="/mlmapping/pose"        to="/imu_pose"/>
+    </node>
+
+    <node pkg="nodelet" type="nodelet" args="load mlmapping/LocalMapNodeletClass mlmapping_nodelet_manager"
+        name="localmap_loader" output="screen">
+    </node>
+
+</launch>
+
+
+
+
+
+
+

@@ -1,0 +1,69 @@
+
+##glmapping parameter
+#Awareness map radius d_Rho*n_Rho
+#devition of orientation 360/d_Phi_deg
+#n_Z = Z_below + Z_over + 1;
+#Number of grid n_Rho*(360/d_Phi)*(nz_below+nz_over+1)
+
+mlmapping_am_d_Rho:         0.1
+mlmapping_am_d_Phi_deg:       3
+mlmapping_am_d_Z:           0.1
+mlmapping_am_n_Rho:          65
+mlmapping_am_n_Z_below:      20
+mlmapping_am_n_Z_over:       16
+
+#Lolbalmap papameter
+#n_xy/n_z available value     5x(2n+1)  5x(odd number)  E.g 27 39 45 75 81 135 165 195 495...
+mlmapping_lm_d_xyz:           0.15
+mlmapping_lm_n_xy:            135
+mlmapping_lm_n_z:             45
+mlmapping_lm_log_odds_min:      -2.0
+mlmapping_lm_log_odds_max:       4.0
+mlmapping_lm_measurement_hit:    0.7
+mlmapping_lm_measurement_miss:  -0.4
+mlmapping_lm_occupied_sh:        2.2
+
+
+use_exactsync:     false
+mlmapping_sample_cnt:       500
+mlmapping_use_raycasting:   true
+mlmapping_enable_esdfs:     false
+mlmapping_enable_2d_grid:   false
+
+publish_T_wb:      true
+publish_T_bs:      true
+
+##transformation from sensor frame to body frame
+sensor_frame_id:   "camera1_depth_optical_frame"
+T_B_S:
+[  0.0,   0.0,  1.0,  0.0,
+  -1.0,   0.0,  0.0,  0.0,
+   0.0,  -1.0,  0.0,  0.05,
+   0.0,   0.0,  0.0,  1.0]
+
+
+body_frame_id:      "body_frame"
+awareness_frame_id: "awareness_frame"
+local_frame_id:     "local_frame"
+world_frame_id:     "map"
+
+
+#generate projected 2D map
+use_projected_2d_map:   true
+use_relative_height:    true
+projected_2d_map_min_z: -0.8
+projected_2d_map_max_z:  0.4
+
+#generate esdfs
+use_esdfs: true
+esdfs_n_xy:              65
+esdfs_n_z:               21
+batch_max_search_range:  15
+
+
+#visulization
+visulize_raycasting: false
+
+
+
+
