@@ -2,7 +2,7 @@
 <launch>
     <param name ="/use_sim_time" value="true"/>
 <!--Input######################################################################################################-->
-    <node pkg="rosbag" type="play" name="rosbag" output="log" args="$(find mlmapping)/bag/corridor.bag -r2 --clock">
+    <node pkg="rosbag" type="play" name="rosbag" output="log" args="$(find mlmapping)/bag/corridor.bag -r1 --clock">
     </node>
 
 <!--rviz#######################################################################################################-->

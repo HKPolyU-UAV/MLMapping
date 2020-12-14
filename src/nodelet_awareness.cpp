@@ -54,7 +54,9 @@ private:
     void pc_pose_input_callback(const sensor_msgs::PointCloud2::ConstPtr & pc_Ptr,
                                 const geometry_msgs::PoseStamped::ConstPtr & pose_Ptr)
     {
-        //tic_toc_ros update_time;
+//        tic_toc_ros tt;
+//        static double sum_t = 0;
+//        static int count = 0;
 
         SE3 T_wb(SO3(Quaterniond(pose_Ptr->pose.orientation.w,
                                  pose_Ptr->pose.orientation.x,
@@ -121,14 +123,15 @@ private:
 
         awareness_map->input_pc_pose(pc_eigen,T_wb);
         awarenessmap_pub->pub(awareness_map,pose_Ptr->header.stamp);
-        //this->localmap_publisher->pub_awareness_map(awareness_map->visualization_cell_list,pose_Ptr->header.stamp);
+
         a2w_pub->pub(awareness_map->T_wa,
                      awareness_map->l2g_msg_hit_pts_l,
                      awareness_map->l2g_msg_miss_pts_l,
                      pose_Ptr->header.stamp);
 
-        //update_time.toc("local map update time");
-        //awareness_map
+//        sum_t+=tt.dT_ms();
+//        count++;
+//        cout << (sum_t/count) << endl;
     }
 
     void timerCb(const ros::TimerEvent& event){

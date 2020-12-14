@@ -114,9 +114,9 @@ void Local2ESDFsBatch::pub_ESDF_3D_from_localmap(local_map_cartesian *map, ros::
   idx_max_y = xyz_idx(1)+((batch_size_nxy-1)/2);
   idx_max_z = xyz_idx(2)+((batch_size_nz-1)/2);
 
-  cout << "idx_min_x " << idx_min_x << "idx_max_x " << idx_max_x << endl;
-  cout << "idx_min_y " << idx_min_y << "idx_max_y " << idx_max_y << endl;
-  cout << "idx_min_z " << idx_min_z << "idx_max_z " << idx_max_z << endl;
+//  cout << "idx_min_x " << idx_min_x << "idx_max_x " << idx_max_x << endl;
+//  cout << "idx_min_y " << idx_min_y << "idx_max_y " << idx_max_y << endl;
+//  cout << "idx_min_z " << idx_min_z << "idx_max_z " << idx_max_z << endl;
 
   for(auto idx:map->occupied_cell_idx)
   {
@@ -133,7 +133,7 @@ void Local2ESDFsBatch::pub_ESDF_3D_from_localmap(local_map_cartesian *map, ros::
       esdf_map3d.at(static_cast<size_t>(idx_z))(idx_x,idx_y)=esdfs_batch_occupied;
     }
   }
-  cout << "extract occupied cells" << endl;
+  //cout << "extract occupied cells" << endl;
   //calculate the esdf for each layer
   for(int z=0; z<batch_size_nz; z++)
   {
@@ -177,7 +177,7 @@ void Local2ESDFsBatch::pub_ESDF_3D_from_localmap(local_map_cartesian *map, ros::
       }
     }
   }
-  cout << "calculated single layer" << endl;
+  //cout << "calculated single layer" << endl;
   //   integrate update to multiple layer
   MatrixXd increase_dz;
   increase_dz.resize(batch_size_nxy,batch_size_nxy);
@@ -226,7 +226,7 @@ void Local2ESDFsBatch::pub_ESDF_3D_from_localmap(local_map_cartesian *map, ros::
 
   sensor_msgs::PointCloud2 output;
   PointCloudRGB_ptr pc (new PointCloudRGB);
-  cout << "awareness_frame_id " << awareness_frame_id << endl;
+  //cout << "awareness_frame_id " << awareness_frame_id << endl;
   pc->header.frame_id = this->awareness_frame_id;
   pc->height = 1;
   for( int layer = 0; layer < batch_size_nz; layer++)

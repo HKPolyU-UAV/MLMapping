@@ -6,17 +6,17 @@
 #Number of grid n_Rho*(360/d_Phi)*(nz_below+nz_over+1)
 
 mlmapping_am_d_Rho:         0.1
-mlmapping_am_d_Phi_deg:       3
+mlmapping_am_d_Phi_deg:       2
 mlmapping_am_d_Z:           0.1
-mlmapping_am_n_Rho:          65
+mlmapping_am_n_Rho:         100
 mlmapping_am_n_Z_below:      20
-mlmapping_am_n_Z_over:       16
+mlmapping_am_n_Z_over:        5
 
 #Lolbalmap papameter
 #n_xy/n_z available value     5x(2n+1)  5x(odd number)  E.g 27 39 45 75 81 135 165 195 495...
-mlmapping_lm_d_xyz:           0.15
-mlmapping_lm_n_xy:            135
-mlmapping_lm_n_z:             45
+mlmapping_lm_d_xyz:           0.2
+mlmapping_lm_n_xy:            95
+mlmapping_lm_n_z:             35
 mlmapping_lm_log_odds_min:      -2.0
 mlmapping_lm_log_odds_max:       4.0
 mlmapping_lm_measurement_hit:    0.7
