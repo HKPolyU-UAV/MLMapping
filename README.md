@@ -1,9 +1,14 @@
 # MLMapping(Multilayer Mapping Kit)
 ### Introduction
+**MLMapping** is a multilayer mapping framework designed for autonomous UAV navigation applications. In this framework, we divided the map into three layers: awareness, local, and global. The awareness map is constructed on the cylindrical coordinate, which enables fast raycasting. The local map is a probability-based volumetric map. The global map adopts dynamic memory management, allocating memory for the active mapping area, and recycling the memory from the inactive mapping area. The framework supports different kinds of map outputs for the global or local path planners.
 
+### Videos:
+<a href="https://www.youtube.com/embed/kBLQzIB_kWo" target="_blank"><img src="http://img.youtube.com/vi/kBLQzIB_kWo/0.jpg" 
+alt="cla" width="480" height="300" border="1" /></a>
 
-### Demo
-TBD
+| Fast Raycasting    | Large Scale Mapping   | Autonomous UAV Navigation  |
+| ---------------------- | ---------------------- |---------------------- |
+| <img src="others/exp1.gif" width="250">  | <img src="others/exp2.gif" width="250">  | <img src="others/exp3.gif" width="250">  |
 
 ### Publications
 TBD
