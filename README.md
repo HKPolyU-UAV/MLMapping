@@ -1,4 +1,5 @@
 # MLMapping(Multilayer Mapping Kit)
+
 ### Introduction
 **MLMapping** is a multilayer mapping framework designed for autonomous UAV navigation applications. In this framework, we divided the map into three layers: awareness, local, and global. The awareness map is constructed on the cylindrical coordinate, which enables fast raycasting. The local map is a probability-based volumetric map. The global map adopts dynamic memory management, allocating memory for the active mapping area, and recycling the memory from the inactive mapping area. The framework supports different kinds of map outputs for the global or local path planners.
 
@@ -13,7 +14,7 @@ alt="cla" width="480" height="300" border="1" /></a>
 ### Publications
 TBD
 
-### Usage
+### Compile
 Clone this repository to catkin src folder say: ~/catkin_ws/src
 ````
 cd ~/catkin_ws/src
@@ -29,15 +30,19 @@ Compile
 cd ~/catkin_ws/
 catkin_make
 ````
-Download the [Dataset](https://drive.google.com/file/d/1AF0zBQUizYWccYE9hravpHns8beP1a0Z/view?usp=sharing) into the bag folder <br />
+
+### Verify Using Provided Dataset
+Download the [Large Scale Mapping Dataset](https://connectpolyu-my.sharepoint.com/:u:/g/personal/17903070r_connect_polyu_hk/EYGhc0ijYl9Muq33mUSCgxABZgNBJrTQPp34SY65gWoXRA?e=8lkjxb) into the bag folder <br />
 decompress the rosbag
 ````
-rosbag decompress glmapping_test.bag
+rosbag decompress corridor.bag
 ````
 run 
 ````
-roslaunch glmapping bag.launch
+roslaunch mlmapping rviz.launch
+roslaunch mlmapping mlmapping_bag_l515_t265.launch
 ````
+
 ### Maintainer
 [Shengyang Chen](https://www.polyu.edu.hk/researchgrp/cywen/index.php/en/people/researchstudent.html)(Dept.ME,PolyU): shengyang.chen@connect.polyu.hk <br />
 
