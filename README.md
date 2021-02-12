@@ -12,8 +12,7 @@ alt="cla" width="480" height="300" border="1" /></a>
 | <img src="others/exp1.gif" width="250">  | <img src="others/exp2.gif" width="250">  | <img src="others/exp3.gif" width="250">  |
 
 ### Publications
-TBD
-
+[Chen, S., Chen, H., Chang, C. W., & Wen, C. Y. (2021). Multilayer Mapping Kit for Autonomous UAV Navigation. IEEE Access.](https://ieeexplore.ieee.org/abstract/document/9336584)
 ### Compile
 Clone this repository to catkin src folder say: ~/catkin_ws/src
 ````
