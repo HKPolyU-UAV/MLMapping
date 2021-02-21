@@ -21,7 +21,7 @@ git clone https://github.com/HKPolyU-UAV/MLMapping.git
 ````
 Install 3rd Part library
 ````
-cd catkin_ws/src/glmapping/3rdPartLib/
+cd catkin_ws/src/MLMapping/3rdPartLib/
 ./install3rdPartLib.sh
 ````
 Compile
