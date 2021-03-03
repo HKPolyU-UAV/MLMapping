@@ -22,6 +22,9 @@ find_package(catkin REQUIRED COMPONENTS
     geometry_msgs
     tf
     tf2
+    nav_msgs
+    visualization_msgs
+    pcl_conversions
     )
 
 add_message_files(
@@ -37,6 +40,8 @@ generate_messages(
     std_msgs
     sensor_msgs
     geometry_msgs
+    nav_msgs
+    visualization_msgs
     )
 
 ## Declare a catkin package
