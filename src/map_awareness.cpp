@@ -18,7 +18,7 @@ double fast_atan2(double y, double x)
 
 double fast_atan (double x)
 {
-    return x*(45 - (x-1)(14+3.83*x));
+    return x*(45 - (x-1)*(14+3.83*x));
 }
 awareness_map_cylindrical::awareness_map_cylindrical()
 {
@@ -175,7 +175,7 @@ void awareness_map_cylindrical::input_pc_pose(vector<Vec3> PC_s, SE3 T_wb)
         {
             l2g_msg_hit_pts_l.push_back(p_l);
             //set observerable
-            // size_t map_idx = mapIdx(rpz_idx);
+            size_t map_idx = mapIdx(rpz_idx);
             // if(map->at(map_idx).is_occupied == false)
             // {
             //     map->at(map_idx).is_occupied = true;
