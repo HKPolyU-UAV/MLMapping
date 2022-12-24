@@ -114,37 +114,37 @@ void awareness_map_cylindrical::input_pc_pose(vector<Vec3> PC_s, SE3 T_wb)
     T_wa = SE3(SO3(Quaterniond(1,0,0,0)),T_wb.translation());
     SE3 T_ws = T_wb * this->T_bs;
     SE3 T_ls = T_wa.inverse() * T_ws;
-    if(first_input)
-    {
-        first_input = false;
-    }else
-    {
-        //map_tmp = map;
-        this->map.swap(this->map_tmp);
-        for(auto& cell:*this->map)
-        {
-            cell.is_occupied = false;
-        }
-        Vec3 t_diff = -(T_wa.translation()-this->last_T_wa.translation());
-        for(auto& cell:*this->map_tmp)
-        {
-            if(cell.is_occupied)
-            {
-                Vec3 transfered_pt_l = cell.sampled_xyz + t_diff;
-                Vec3I rpz_idx;
-                if(xyz2RhoPhiZwithBoderCheck(transfered_pt_l,rpz_idx))
-                {//set observerable
-                    size_t map_idx = mapIdx(rpz_idx);
-                    if(map->at(map_idx).is_occupied == false)
-                    {
-                        map->at(map_idx).is_occupied = true;
-                        map->at(map_idx).sampled_xyz = transfered_pt_l;
-                        this->occupied_cell_idx.push_back(map_idx);
-                    }
-                }
-            }
-        }
-    }
+    // if(first_input)
+    // {
+    //     first_input = false;
+    // }else
+    // {
+    //     //map_tmp = map;
+    //     this->map.swap(this->map_tmp);
+    //     for(auto& cell:*this->map)
+    //     {
+    //         cell.is_occupied = false;
+    //     }
+    //     Vec3 t_diff = -(T_wa.translation()-this->last_T_wa.translation());
+    //     for(auto& cell:*this->map_tmp)
+    //     {
+    //         if(cell.is_occupied)
+    //         {
+    //             Vec3 transfered_pt_l = cell.sampled_xyz + t_diff;
+    //             Vec3I rpz_idx;
+    //             if(xyz2RhoPhiZwithBoderCheck(transfered_pt_l, ))
+    //             {//set observerable
+    //                 size_t map_idx = mapIdx(rpz_idx);
+    //                 if(map->at(map_idx).is_occupied == false)
+    //                 {
+    //                     map->at(map_idx).is_occupied = true;
+    //                     map->at(map_idx).sampled_xyz = transfered_pt_l;
+    //                     this->occupied_cell_idx.push_back(map_idx);
+    //                 } 
+    //             }
+    //         }
+    //     }
+    // }
     //STEP 2: Add measurement
     for(auto p_s:PC_s)
     {
@@ -155,12 +155,12 @@ void awareness_map_cylindrical::input_pc_pose(vector<Vec3> PC_s, SE3 T_wb)
             l2g_msg_hit_pts_l.push_back(p_l);
             //set observerable
             size_t map_idx = mapIdx(rpz_idx);
-            if(map->at(map_idx).is_occupied == false)
-            {
-                map->at(map_idx).is_occupied = true;
-                map->at(map_idx).sampled_xyz = p_l;
-                this->occupied_cell_idx.push_back(map_idx);
-            }
+            // if(map->at(map_idx).is_occupied == false)
+            // {
+            //     map->at(map_idx).is_occupied = true;
+            //     map->at(map_idx).sampled_xyz = p_l;
+            //     this->occupied_cell_idx.push_back(map_idx);
+            // }
             if(visibility_check)
             {
                 double raycasting_rate = map->at(map_idx).raycasting_z_over_rho;
@@ -168,7 +168,7 @@ void awareness_map_cylindrical::input_pc_pose(vector<Vec3> PC_s, SE3 T_wb)
                 {
                     int diff_r = rpz_idx[0]-r;
                     int raycasting_z = static_cast<int>(round(rpz_idx[2]-(diff_r*raycasting_rate)));
-                    map->at(this->mapIdx(Vec3I(r,rpz_idx[1],raycasting_z))).is_occupied = false;
+                    // map->at(this->mapIdx(Vec3I(r,rpz_idx[1],raycasting_z))).is_occupied = false;
                     l2g_msg_miss_pts_l.push_back(map->at(this->mapIdx(Vec3I(r,rpz_idx[1],raycasting_z))).center_pt);
                 }
             }
