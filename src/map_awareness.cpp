@@ -107,7 +107,7 @@ void awareness_map_cylindrical::input_pc_pose(vector<Vec3> PC_s, SE3 T_wb)
 {
     this->l2g_msg_hit_pts_l.clear();
     this->l2g_msg_miss_pts_l.clear();
-    this->occupied_cell_idx.clear();
+    // this->occupied_cell_idx.clear();
 
     //STEP 1: transfer from previous map
     //Frame [w]orld, [s]ensor, [b]ody, [l]ocalmap; [g]lobalmap
@@ -154,7 +154,7 @@ void awareness_map_cylindrical::input_pc_pose(vector<Vec3> PC_s, SE3 T_wb)
         {
             l2g_msg_hit_pts_l.push_back(p_l);
             //set observerable
-            size_t map_idx = mapIdx(rpz_idx);
+            // size_t map_idx = mapIdx(rpz_idx);
             // if(map->at(map_idx).is_occupied == false)
             // {
             //     map->at(map_idx).is_occupied = true;
@@ -174,5 +174,5 @@ void awareness_map_cylindrical::input_pc_pose(vector<Vec3> PC_s, SE3 T_wb)
             }
         }
     }
-    this->last_T_wa = T_wa;
+    // this->last_T_wa = T_wa;
 }
