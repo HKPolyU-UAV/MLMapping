@@ -1,5 +1,25 @@
 #include "map_awareness.h"
 
+double fast_atan2(double y, double x)
+{
+    // 1. map the input to 0-1
+  double input = y/x;
+  double a_input = abs(input);
+  int sign = a_input/input;
+  if (a_input > 1)
+  {
+    return sign * sign*M_PI/180*(90 - fast_atan(1/a_input));
+  }
+  else{
+    return sign * M_PI/180*fast_atan(a_input);
+  }
+
+}
+
+double fast_atan (double x)
+{
+    return x*(45 - (x-1)(14+3.83*x));
+}
 awareness_map_cylindrical::awareness_map_cylindrical()
 {
 
@@ -76,7 +96,8 @@ bool awareness_map_cylindrical::xyz2RhoPhiZwithBoderCheck(Vec3 xyz_l, Vec3I &rho
 {
     double rho = sqrt(pow(xyz_l(0),2)+pow(xyz_l(1),2));
     int rho_idx =  static_cast<int>(rho/this->map_dRho);
-    double phi = atan2(xyz_l(1),xyz_l(0));
+    // double phi = atan2(xyz_l(1),xyz_l(0));
+    double phi = fast_atan2(xyz_l(1),xyz_l(0));
     if (phi<0) phi += 2*M_PI;
     int phi_idx = static_cast<int>(phi/this->map_dPhi);
     double z = xyz_l(2)-this->z_border_min;
