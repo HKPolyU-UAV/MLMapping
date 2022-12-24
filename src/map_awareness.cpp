@@ -55,7 +55,7 @@ void awareness_map_cylindrical::init_map(double d_Rho, double d_Phi_deg, double 
     this->z_border_min     = -(n_z_below*d_Z)-0.5*d_Z;
     this->nRho_x_nPhi = map_nRho*map_nPhi;
     this->map     = std::unique_ptr<vector<CYLINDRICAL_CELL>>(new vector<CYLINDRICAL_CELL>());
-    this->map_tmp = std::unique_ptr<vector<CYLINDRICAL_CELL>>(new vector<CYLINDRICAL_CELL>());
+    // this->map_tmp = std::unique_ptr<vector<CYLINDRICAL_CELL>>(new vector<CYLINDRICAL_CELL>());
 
     int idx_in_order=0;
     for (int z=0; z<this->map_nZ; z++)
@@ -83,7 +83,7 @@ void awareness_map_cylindrical::init_map(double d_Rho, double d_Phi_deg, double 
                 cell.idx=idx_in_order;
                 idx_in_order++;
                 this->map->push_back(cell);
-                this->map_tmp->push_back(cell);
+                // this->map_tmp->push_back(cell);
             }
         }
     }

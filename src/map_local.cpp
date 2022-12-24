@@ -402,7 +402,7 @@ void local_map_cartesian::input_pc_pose(vector<Vec3> PC_hit_a,
         if(xyz2xyzIdxwithBoderCheck(p_miss_w,xyz_idx))
         {
             size_t map_idx=mapIdx(xyz_idx);
-            map->at(map_idx).log_odds--;
+            map->at(map_idx).log_odds-=log_odds_miss;
             if(map->at(map_idx).log_odds < log_odds_min)
             {
                 map->at(map_idx).log_odds=log_odds_min;
