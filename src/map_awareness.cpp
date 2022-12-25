@@ -1,6 +1,6 @@
 #include "map_awareness.h"
 
-double fast_atan2(double y, double x)
+inline double awareness_map_cylindrical::fast_atan2(double y, double x)
 {
     // 1. map the input to 0-1
   double input = y/x;
@@ -8,7 +8,7 @@ double fast_atan2(double y, double x)
   int sign = a_input/input;
   if (a_input > 1)
   {
-    return sign * sign*M_PI/180*(90 - fast_atan(1/a_input));
+    return sign * M_PI/180*(90 - fast_atan(1/a_input));
   }
   else{
     return sign * M_PI/180*fast_atan(a_input);
@@ -16,7 +16,7 @@ double fast_atan2(double y, double x)
 
 }
 
-double fast_atan (double x)
+inline double awareness_map_cylindrical::fast_atan (double x)
 {
     return x*(45 - (x-1)*(14+3.83*x));
 }

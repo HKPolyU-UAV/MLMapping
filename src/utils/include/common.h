@@ -12,7 +12,7 @@
 #include <pcl/impl/point_types.hpp>
 #include "../3rdPartLib/Sophus/sophus/so3.h"
 #include "../3rdPartLib/Sophus/sophus/se3.h"
-
+#include <unordered_map>
 using namespace std;
 using namespace Eigen;
 using namespace Sophus;

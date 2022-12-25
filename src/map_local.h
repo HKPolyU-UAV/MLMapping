@@ -61,6 +61,7 @@ public:
     double map_dxyz;
     Vec3   map_center_xyz;
     vector<unsigned int> occupied_cell_idx;
+    unordered_map<int,bool> occupied_cell_idx_map;
     std::unique_ptr<vector<CARTESIAN_CELL>> map;
     LOCALMAP_VIS_PARA vis_paras;
 

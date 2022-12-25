@@ -67,9 +67,9 @@ void local_map_cartesian::devide_local_map_to_submaps()
         sub_maps[i].submap_info.offset_min_xyz = diff_min_center + sub_map_switching_check_list[i].submap_info.center_xyz;
         //cout << "submap idx: " << i << " center: " << sub_maps[i].submap_info.center_xyz.transpose() << endl;
     }
-    for(auto idx:this->occupied_cell_idx)
+    for(auto iter = occupied_cell_idx_map.begin(); iter != occupied_cell_idx_map.end(); ++iter)
     {
-        CARTESIAN_CELL cell_in_localmap = this->map->at(idx);
+        CARTESIAN_CELL cell_in_localmap = this->map->at(iter->first);
         SUBMAP_CELL cell_in_submap;
         cell_in_submap.pt_w = cell_in_localmap.center_pt + this->map_center_xyz;
         cell_in_submap.log_odds = cell_in_localmap.log_odds;
@@ -123,7 +123,7 @@ void local_map_cartesian::init_map(double d_xyz_in,
         sub_map_switching_check_list[i].local_sub_map_idx=static_cast<unsigned int>(i);
     }
     unique_submap_idx = 0;
-    occupied_cell_idx.clear();
+    occupied_cell_idx_map.clear();
 
     vis_paras.map_maxz = (0.5*map_dxyz)+floor(map_nz/2.0)*map_dxyz;
     vis_paras.map_minz = -(0.5*map_dxyz)-floor(map_nz/2.0)*map_dxyz;
@@ -141,7 +141,7 @@ void local_map_cartesian::clear_map()
     {
         cell.is_occupied = false;
     }
-    this->occupied_cell_idx.clear();
+    this->occupied_cell_idx_map.clear();
 }
 
 void local_map_cartesian::allocate_memory_for_local_map()
@@ -290,7 +290,8 @@ void local_map_cartesian::input_pc_pose(vector<Vec3> PC_hit_a,
                     {
                         size_t map_idx=mapIdx(xyz_idx);
                         map->at(map_idx).log_odds=cell.log_odds;
-                        map->at(mapIdx(xyz_idx)).is_occupied = true;
+                        map->at(map_idx).is_occupied = true;
+                        occupied_cell_idx_map[map->at(map_idx).idx] = true;
                     }
                 }
             }
@@ -323,7 +324,8 @@ void local_map_cartesian::input_pc_pose(vector<Vec3> PC_hit_a,
                         {
                             size_t map_idx=mapIdx(xyz_idx);
                             map->at(map_idx).log_odds=cell.log_odds;
-                            map->at(mapIdx(xyz_idx)).is_occupied = true;
+                            map->at(map_idx).is_occupied = true;
+                            occupied_cell_idx_map[map->at(map_idx).idx] = true;
                         }
                     }
                 }
@@ -338,7 +340,8 @@ void local_map_cartesian::input_pc_pose(vector<Vec3> PC_hit_a,
                     {
                         size_t map_idx=mapIdx(xyz_idx);
                         map->at(map_idx).log_odds=cell.log_odds;
-                        map->at(mapIdx(xyz_idx)).is_occupied = true;
+                        map->at(map_idx).is_occupied = true;
+                        occupied_cell_idx_map[map->at(map_idx).idx] = true;
                     }
                 }
             }
@@ -366,21 +369,21 @@ void local_map_cartesian::input_pc_pose(vector<Vec3> PC_hit_a,
     //update map.
 
     //Frame [w]orld, [s]ensor, [b]ody, [a]wareness, [l]ocalmap;
-    vector<Vec3> pc_hit_w;
-    vector<Vec3> pc_miss_w;
-    for(auto p_a:PC_hit_a)
-    {
-        pc_hit_w.push_back(T_wa*p_a);
-    }
-    for(auto p_a:PC_miss_a)
-    {
-        pc_miss_w.push_back(T_wa*p_a);
-    }
+    // vector<Vec3> pc_hit_w;
+    // vector<Vec3> pc_miss_w;
+    // for(auto p_a:PC_hit_a)
+    // {
+    //     pc_hit_w.push_back(T_wa*p_a);
+    // }
+    // for(auto p_a:PC_miss_a)
+    // {
+    //     pc_miss_w.push_back(T_wa*p_a);
+    // }
     //STEP 2: Add measurement
-    for(auto p_w:pc_hit_w)
+    for(auto p_a:pc_hit_a)
     {
         Vec3I xyz_idx;
-        if(xyz2xyzIdxwithBoderCheck(p_w,xyz_idx))
+        if(xyz2xyzIdxwithBoderCheck(T_wa*p_a,xyz_idx))
         {
             size_t map_idx=mapIdx(xyz_idx);
             map->at(map_idx).log_odds+=log_odds_hit;
@@ -390,16 +393,17 @@ void local_map_cartesian::input_pc_pose(vector<Vec3> PC_hit_a,
             }
             //set observerable
             if(map->at(map_idx).log_odds > log_odds_occupied_sh){
-                map->at(mapIdx(xyz_idx)).is_occupied = true;
+                map->at(map_idx).is_occupied = true;
+                occupied_cell_idx_map[map->at(map_idx).idx] = true;
             }
         }else
         {
         }
     }
-    for(auto p_miss_w:pc_miss_w)
+    for(auto p_miss_a:pc_miss_a)
     {
         Vec3I xyz_idx;
-        if(xyz2xyzIdxwithBoderCheck(p_miss_w,xyz_idx))
+        if(xyz2xyzIdxwithBoderCheck(T_wa*p_miss_a,xyz_idx))
         {
             size_t map_idx=mapIdx(xyz_idx);
             map->at(map_idx).log_odds-=log_odds_miss;
@@ -409,22 +413,23 @@ void local_map_cartesian::input_pc_pose(vector<Vec3> PC_hit_a,
             }
             //set free
             if(map->at(map_idx).log_odds < log_odds_occupied_sh){
-                map->at(mapIdx(xyz_idx)).is_occupied = false;
+                map->at(map_idx).is_occupied = false;
+                occupied_cell_idx_map.erase(map->at(map_idx).idx);
             }
         }else
         {
         }
     }
     //Update occupied list;
-    occupied_cell_idx.clear();
-    for(auto cell: *map)
-    {
-        if(cell.is_occupied)
-        {
-            occupied_cell_idx.push_back(cell.idx);
-            //visualization_cell_list.push_back(cell.vis_pt);
-        }
-    }
+    // occupied_cell_idx.clear();
+    // for(auto cell: *map)
+    // {
+    //     if(cell.is_occupied)
+    //     {
+    //         occupied_cell_idx.push_back(cell.idx);
+    //         //visualization_cell_list.push_back(cell.vis_pt);
+    //     }
+    // }
     //cout << "globalmap vis size" << visualization_cell_list.size() << endl;
 
 }

@@ -44,6 +44,8 @@ public:
     size_t mapIdx(Vec3I Rho_Phi_z);
     size_t mapIdx(int Rho, int Phi, int z);
     bool   xyz2RhoPhiZwithBoderCheck(Vec3 xyz_l, Vec3I &rhophiz);
+    double fast_atan2(double y, double x);
+    double fast_atan (double x);
     //input callback
     void input_pc_pose(vector<Vec3> PC_s, SE3 T_wb);
 };
