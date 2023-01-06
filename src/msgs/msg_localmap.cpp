@@ -15,10 +15,10 @@ void msg_localmap::pub(local_map_cartesian *map,
 {
     mlmapping::localmap msg;
     msg.header.stamp = stamp;
-    msg.occupied_cell_count = static_cast<unsigned int>(map->occupied_cell_idx.size());
-    for(auto cell: map->occupied_cell_idx)
+    msg.occupied_cell_count = static_cast<unsigned int>(map->occupied_cell_idx_map.size());
+    for(auto iter = map->occupied_cell_idx_map.begin(); iter != map->occupied_cell_idx_map.end(); ++iter)
     {
-        msg.occupied_cell_idx.push_back(cell);
+        msg.occupied_cell_idx.push_back(iter->first);
     }
     Vec3 t = map->T_wl.translation();
     Quaterniond uq= map->T_wl.unit_quaternion();

@@ -5,13 +5,13 @@ local_map_cartesian::local_map_cartesian()
 
 }
 
-inline size_t local_map_cartesian::mapIdx(Vec3I xyz_idx)
+size_t local_map_cartesian::mapIdx(Vec3I xyz_idx)
 {
     return mapIdx(static_cast<unsigned int>(xyz_idx(0)),
                   static_cast<unsigned int>(xyz_idx(1)),
                   static_cast<unsigned int>(xyz_idx(2)));
 }
-inline size_t local_map_cartesian::mapIdx(unsigned int x_idx, unsigned int y_idx, unsigned int z_idx)
+size_t local_map_cartesian::mapIdx(unsigned int x_idx, unsigned int y_idx, unsigned int z_idx)
 {
     return static_cast<size_t>( z_idx*map_nx_times_ny
                                 +y_idx*map_nxy
@@ -64,22 +64,17 @@ void local_map_cartesian::devide_local_map_to_submaps()
                     map_min_y + submap_paras.submap_diff_center_offset(1) + ((i%25)/5)*map_dxyz*submap_paras.submap_nxy,
                     map_min_z + submap_paras.submap_diff_center_offset(2) + (i/25)*map_dxyz*submap_paras.submap_nz
                     );
-        sub_maps[i].submap_info.offset_min_xyz = diff_min_center + sub_maps[i].submap_info.center_xyz;
-        // cout<<sizeof(sub_map_switching_check_list)<<endl;
-        // cout << "submap idx: " << i << " center: " << sub_map_switching_check_list[i].submap_info.center_xyz.transpose() << endl;
+        sub_maps[i].submap_info.offset_min_xyz = diff_min_center + sub_map_switching_check_list[i].submap_info.center_xyz;
+        //cout << "submap idx: " << i << " center: " << sub_maps[i].submap_info.center_xyz.transpose() << endl;
     }
-    for(auto iter = occupied_cell_idx_map.begin(); iter != occupied_cell_idx_map.end(); ++iter)
+    for(auto idx:this->occupied_cell_idx)
     {
-        CARTESIAN_CELL cell_in_localmap = this->map->at(iter->first);
+        CARTESIAN_CELL cell_in_localmap = this->map->at(idx);
         SUBMAP_CELL cell_in_submap;
         cell_in_submap.pt_w = cell_in_localmap.center_pt + this->map_center_xyz;
         cell_in_submap.log_odds = cell_in_localmap.log_odds;
         sub_maps[cell_in_localmap.relevant_submap_idx].cells.push_back(cell_in_submap);
-        // clear the oringinal local map
-        this->map->at(iter->first).log_odds = 0;
-        this->map->at(iter->first).is_occupied = false;
     }
-    this->occupied_cell_idx_map.clear();
 }
 
 void local_map_cartesian::init_map(double d_xyz_in,
@@ -128,7 +123,7 @@ void local_map_cartesian::init_map(double d_xyz_in,
         sub_map_switching_check_list[i].local_sub_map_idx=static_cast<unsigned int>(i);
     }
     unique_submap_idx = 0;
-    occupied_cell_idx_map.clear();
+    occupied_cell_idx.clear();
 
     vis_paras.map_maxz = (0.5*map_dxyz)+floor(map_nz/2.0)*map_dxyz;
     vis_paras.map_minz = -(0.5*map_dxyz)-floor(map_nz/2.0)*map_dxyz;
@@ -145,9 +140,8 @@ void local_map_cartesian::clear_map()
     for(auto& cell: *this->map)
     {
         cell.is_occupied = false;
-        cell.log_odds = 0;
     }
-    this->occupied_cell_idx_map.clear();
+    this->occupied_cell_idx.clear();
 }
 
 void local_map_cartesian::allocate_memory_for_local_map()
@@ -213,7 +207,6 @@ void local_map_cartesian::input_pc_pose(vector<Vec3> PC_hit_a,
                                         map_warehouse* warehouse)
 {
     T_wa_latest = T_wa;
-    local_switch = false;
     if(first_pose)
     {
         //center_xyz and min_xyz
@@ -225,7 +218,7 @@ void local_map_cartesian::input_pc_pose(vector<Vec3> PC_hit_a,
         map_min_y = map_center_xyz(1) - (0.5*map_dxyz)-floor(map_nxy/2.0)*map_dxyz;
         map_min_z = map_center_xyz(2) - (0.5*map_dxyz)-floor(map_nz/2.0)*map_dxyz;
         map_min_xyz = Vec3(map_min_x,map_min_y,map_min_z);
-        // T_wl =  SE3(SO3(0,0,0),map_center_xyz);
+        T_wl =  SE3(SO3(0,0,0),map_center_xyz);
         //init the switching check list
         Vec3 diff_min_center = map_min_xyz - map_center_xyz;
         //cout << "map center: " << T_wl.translation().transpose() <<  endl;
@@ -244,7 +237,6 @@ void local_map_cartesian::input_pc_pose(vector<Vec3> PC_hit_a,
     }else
     {
         //check whether need to swith to another localmap
-        local_switch = true;
         Vec3 t_wa=T_wa.translation();
         double min_distance_2_center = (t_wa-map_center_xyz).norm();
         double min_distance_2_other = 999.0;
@@ -263,7 +255,7 @@ void local_map_cartesian::input_pc_pose(vector<Vec3> PC_hit_a,
         if(min_distance_2_center>min_distance_2_other)
         {
             //            cout << "min_distance_2_center=" << min_distance_2_center << " while " << "min_distance_2_other=" << min_distance_2_other << endl;
-                       cout << "Local map switch to " << min_distance_2_other_idx << endl;
+            //            cout << "switch to " << min_distance_2_other_idx << endl;
             //STEP1: devided the map to submaps
             this->devide_local_map_to_submaps();
             //STEP2: switching
@@ -272,14 +264,12 @@ void local_map_cartesian::input_pc_pose(vector<Vec3> PC_hit_a,
             map_min_x = map_min_xyz(0);
             map_min_y = map_min_xyz(1);
             map_min_z = map_min_xyz(2);
-            // T_wl =  SE3(SO3(0,0,0),map_center_xyz);
+            T_wl =  SE3(SO3(0,0,0),map_center_xyz);
             //cout << "new map center: " << T_wl.translation().transpose() << endl;
-            // for(auto& i: *map)
-            // {
-            //     i.is_occupied = false;
-            // }
-            // this->clear_map();
-            // this->occupied_cell_idx_map.clear();
+            for(auto& i: *map)
+            {
+                i.is_occupied=false;
+            }
             //STEP3: recover from warehouse and submaps of previous localmap
             //recover from previous localmap
             vector<unsigned int> relevant, unrelavant, relevant_from_warehouse;
@@ -299,10 +289,8 @@ void local_map_cartesian::input_pc_pose(vector<Vec3> PC_hit_a,
                     if(xyz2xyzIdxwithBoderCheck(cell.pt_w,xyz_idx))
                     {
                         size_t map_idx=mapIdx(xyz_idx);
-                        map->at(map_idx).log_odds= cell.log_odds > log_odds_max ? log_odds_max : cell.log_odds;
-                        // cout<<"recover node odds: "<<cell.log_odds<<endl;
-                        map->at(map_idx).is_occupied = true;
-                        occupied_cell_idx_map[map->at(map_idx).idx] = true;
+                        map->at(map_idx).log_odds=cell.log_odds;
+                        map->at(mapIdx(xyz_idx)).is_occupied = true;
                     }
                 }
             }
@@ -334,9 +322,8 @@ void local_map_cartesian::input_pc_pose(vector<Vec3> PC_hit_a,
                         if(xyz2xyzIdxwithBoderCheck(cell.pt_w,xyz_idx))
                         {
                             size_t map_idx=mapIdx(xyz_idx);
-                            map->at(map_idx).log_odds=cell.log_odds > log_odds_max ? log_odds_max : cell.log_odds;
-                            map->at(map_idx).is_occupied = true;
-                            occupied_cell_idx_map[map->at(map_idx).idx] = true;
+                            map->at(map_idx).log_odds=cell.log_odds;
+                            map->at(mapIdx(xyz_idx)).is_occupied = true;
                         }
                     }
                 }
@@ -350,9 +337,8 @@ void local_map_cartesian::input_pc_pose(vector<Vec3> PC_hit_a,
                     if(xyz2xyzIdxwithBoderCheck(cell.pt_w,xyz_idx))
                     {
                         size_t map_idx=mapIdx(xyz_idx);
-                        map->at(map_idx).log_odds=cell.log_odds > log_odds_max ? log_odds_max : cell.log_odds;
-                        map->at(map_idx).is_occupied = true;
-                        occupied_cell_idx_map[map->at(map_idx).idx] = true;
+                        map->at(map_idx).log_odds=cell.log_odds;
+                        map->at(mapIdx(xyz_idx)).is_occupied = true;
                     }
                 }
             }
@@ -380,25 +366,23 @@ void local_map_cartesian::input_pc_pose(vector<Vec3> PC_hit_a,
     //update map.
 
     //Frame [w]orld, [s]ensor, [b]ody, [a]wareness, [l]ocalmap;
-    // vector<Vec3> pc_hit_w;
-    // vector<Vec3> pc_miss_w;
-    // for(auto p_a:PC_hit_a)
-    // {
-    //     pc_hit_w.push_back(T_wa*p_a);
-    // }
-    // for(auto p_a:PC_miss_a)
-    // {
-    //     pc_miss_w.push_back(T_wa*p_a);
-    // }
-    //STEP 2: Add measurement
+    vector<Vec3> pc_hit_w;
+    vector<Vec3> pc_miss_w;
     for(auto p_a:PC_hit_a)
     {
+        pc_hit_w.push_back(T_wa*p_a);
+    }
+    for(auto p_a:PC_miss_a)
+    {
+        pc_miss_w.push_back(T_wa*p_a);
+    }
+    //STEP 2: Add measurement
+    for(auto p_w:pc_hit_w)
+    {
         Vec3I xyz_idx;
-        if(xyz2xyzIdxwithBoderCheck(T_wa*p_a,xyz_idx))
+        if(xyz2xyzIdxwithBoderCheck(p_w,xyz_idx))
         {
             size_t map_idx=mapIdx(xyz_idx);
-            // if (local_switch && !map->at(map_idx).is_occupied)
-            // map->at(map_idx).log_odds = 0;
             map->at(map_idx).log_odds+=log_odds_hit;
             if(map->at(map_idx).log_odds > log_odds_max)
             {
@@ -406,45 +390,41 @@ void local_map_cartesian::input_pc_pose(vector<Vec3> PC_hit_a,
             }
             //set observerable
             if(map->at(map_idx).log_odds > log_odds_occupied_sh){
-                map->at(map_idx).is_occupied = true;
-                occupied_cell_idx_map[map->at(map_idx).idx] = true;
+                map->at(mapIdx(xyz_idx)).is_occupied = true;
             }
         }else
         {
         }
     }
-    for(auto p_miss_a:PC_miss_a)
+    for(auto p_miss_w:pc_miss_w)
     {
         Vec3I xyz_idx;
-        if(xyz2xyzIdxwithBoderCheck(T_wa*p_miss_a,xyz_idx))
+        if(xyz2xyzIdxwithBoderCheck(p_miss_w,xyz_idx))
         {
             size_t map_idx=mapIdx(xyz_idx);
-            map->at(map_idx).log_odds += log_odds_miss;  //log_odds_miss is negative, so add it
+            map->at(map_idx).log_odds--;
             if(map->at(map_idx).log_odds < log_odds_min)
             {
                 map->at(map_idx).log_odds=log_odds_min;
             }
             //set free
             if(map->at(map_idx).log_odds < log_odds_occupied_sh){
-                map->at(map_idx).is_occupied = false;
-                occupied_cell_idx_map.erase(map->at(map_idx).idx);
+                map->at(mapIdx(xyz_idx)).is_occupied = false;
             }
         }else
         {
         }
     }
-    // cout << occupied_cell_idx_map.size()<<endl;
-    // cout << PC_miss_a.size()<<endl;
     //Update occupied list;
-    // occupied_cell_idx.clear();
-    // for(auto cell: *map)
-    // {
-    //     if(cell.is_occupied)
-    //     {
-    //         occupied_cell_idx.push_back(cell.idx);
-
-    //     }
-    // }
+    occupied_cell_idx.clear();
+    for(auto cell: *map)
+    {
+        if(cell.is_occupied)
+        {
+            occupied_cell_idx.push_back(cell.idx);
+            //visualization_cell_list.push_back(cell.vis_pt);
+        }
+    }
     //cout << "globalmap vis size" << visualization_cell_list.size() << endl;
 
 }

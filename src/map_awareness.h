@@ -43,7 +43,7 @@ public:
     //Visit certain cell
     size_t mapIdx(Vec3I Rho_Phi_z);
     size_t mapIdx(int Rho, int Phi, int z);
-    bool   xyz2RhoPhiZwithBoderCheck(Vec3 xyz_l, Vec3I &rhophiz);
+    bool   xyz2RhoPhiZwithBoderCheck(Vec3 xyz_l, Vec3I &rhophiz, bool &can_do_cast);
     double fast_atan2(double y, double x);
     double fast_atan (double x);
     //input callback

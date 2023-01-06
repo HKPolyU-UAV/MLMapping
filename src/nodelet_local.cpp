@@ -32,7 +32,9 @@
 #include <visualization_msgs/MarkerArray.h>
 #include <independent_modules/l2grid2d.h>
 #include <independent_modules/l2esdfs_batch_3d.h>
-
+#include <chrono>
+#include <numeric>
+#include <iostream>
 
 namespace mlmapping_ns
 {
@@ -57,7 +59,8 @@ private:
   bool enable_esfds;
   Local2OccupancyGrid2D *occupancy_grid_publisher;
   Local2ESDFsBatch      *esdfs_publisher;
-
+  float total_t;
+  int count = 0;
   ros::Publisher map_pub;
 
   void from_awareness_callback(const mlmapping::awareness2localConstPtr & msg)
@@ -67,7 +70,7 @@ private:
 //    static double sum_t_esfd = 0;
 //    static double sum_t_2d = 0;
 //    static int count = 0;
-
+	  auto t1 = std::chrono::system_clock::now();
     SE3 T_wa;
     vector<Vec3> l2g_hit_a;
     vector<Vec3> l2g_miss_a;
@@ -91,7 +94,7 @@ private:
     }
     if(enable_esfds)
     {
-      tic_toc_ros tt;
+      // tic_toc_ros tt;
       esdfs_publisher->pub_ESDF_3D_from_localmap(local_map,stamp);
       //sum_t_esfd += tt.dT_ms();
     }
@@ -129,6 +132,10 @@ private:
         this->map_pub.publish(spheres);
       }
     }
+	auto t2 = std::chrono::system_clock::now();
+	std::chrono::duration<double> diff = t2 - t1;
+  total_t += diff.count()*1000;
+	printf("Local map time cost: %.8f ms, ave-time cost: %.8f\n", diff.count()*1000, total_t/++count);
   }
 
   void timerCb(const ros::TimerEvent& event){

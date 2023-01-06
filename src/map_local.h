@@ -46,7 +46,7 @@ private:
 
     double map_min_x;
     double map_min_y;
-
+    bool local_switch;
     SUBMAP_IN_LOCAL_PARA        submap_paras;
     SUBMAP_SWITCHING_CHECK_LIST sub_map_switching_check_list[27];//cloest 27 submaps
     SUBMAP                      sub_maps[125];

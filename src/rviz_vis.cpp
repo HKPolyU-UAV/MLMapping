@@ -235,9 +235,11 @@ void rviz_vis::pub_global_local_map(map_warehouse* warehouse,
         }
     }
     Vec3 center_offset = localmap->map_center_xyz;
-    for (auto i:localmap->occupied_cell_idx) {
+    // for (auto i:localmap->occupied_cell_idx) 
+    for(auto iter = localmap->occupied_cell_idx_map.begin(); iter != localmap->occupied_cell_idx_map.end(); ++iter)
+    {
         geometry_msgs::Point point;
-        Vec3 pt = localmap->map->at(i).center_pt;
+        Vec3 pt = localmap->map->at(iter->first).center_pt;
         pt += center_offset;
         pc->points.push_back (PointP(pt.x(),pt.y(),pt.z()));
     }

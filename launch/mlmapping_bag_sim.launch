@@ -3,14 +3,14 @@
     <param name ="/use_sim_time" value="true"/>
     <!--sim_planner1-->
 <!--Input######################################################################################################-->
-    <node pkg="rosbag" type="play" name="rosbag" output="log" args="$(find mlmapping)/bag/mlmapping_test.bag -r3 --clock">
+    <node pkg="rosbag" type="play" name="rosbag" output="log" args="$(find mlmapping)/bag/flight_1.bag">
     </node>
 
 <!--rviz#######################################################################################################-->
-<!--    <node type="rviz" name="rviz" pkg="rviz" args="-d $(find mlmapping)/launch/config/mlmapping.rviz" />-->
+   <node type="rviz" name="rviz" pkg="rviz" args="-d $(find mlmapping)/launch/config/mlmapping.rviz" />
 
 <!--visualization##############################################################################################-->
-    <node pkg="mlmapping" type="visualization" name="visualization" output="screen" />
+    <!-- <node pkg="mlmapping" type="visualization" name="visualization" output="screen" /> -->
 
 <!--mlmapping##################################################################################################-->
     <arg name="node_start_delay"  default="1.0" />
@@ -19,14 +19,17 @@
     <!-- Manager -->
     <node pkg="nodelet" type="nodelet"
           name="mlmapping_nodelet_manager" args="manager" output="screen">
-          <param name="num_worker_threads" value="4" />
+          <param name="num_worker_threads" value="2" />
     </node>
 
     <node pkg="nodelet" type="nodelet" args="load mlmapping/AwarenessMapNodeletClass mlmapping_nodelet_manager"
         name="awareness_loader" output="screen"
         launch-prefix="bash -c 'sleep 1; $0 $@' ">
-        <remap from="/mlmapping/pc"          to="/camera/depth/color/points"/>
+        <!-- <remap from="/mlmapping/pc"          to="/camera/depth/color/points"/> -->
+        <remap from="/mlmapping/pc"          to="/filtered_RadiusOutlierRemoval"/>
         <remap from="/mlmapping/pose"        to="/mavros/local_position/pose"/>
+        <!-- Odom or pose -->
+        <remap from="/mlmapping/odom"        to="/vicon_imu_ekf_odom"/>
     </node>
 
     <node pkg="nodelet" type="nodelet" args="load mlmapping/LocalMapNodeletClass mlmapping_nodelet_manager"
