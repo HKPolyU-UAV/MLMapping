@@ -25,8 +25,8 @@
     <node pkg="nodelet" type="nodelet" args="load mlmapping/AwarenessMapNodeletClass mlmapping_nodelet_manager"
         name="awareness_loader" output="screen"
         launch-prefix="bash -c 'sleep 1; $0 $@' ">
-        <!-- <remap from="/mlmapping/pc"          to="/camera/depth/color/points"/> -->
-        <remap from="/mlmapping/pc"          to="/filtered_RadiusOutlierRemoval"/>
+        <remap from="/mlmapping/pc"          to="/camera/depth/color/points"/>
+        <!-- <remap from="/mlmapping/pc"          to="/filtered_RadiusOutlierRemoval"/> -->
         <remap from="/mlmapping/pose"        to="/mavros/local_position/pose"/>
         <!-- Odom or pose -->
         <remap from="/mlmapping/odom"        to="/vicon_imu_ekf_odom"/>

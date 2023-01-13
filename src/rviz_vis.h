@@ -42,6 +42,11 @@ public:
                                      string frame_id,
                                      unsigned int buffer_size);
 
+    void set_as_frontier_publisher(ros::NodeHandle& nh,
+                                     string topic_name,
+                                     string frame_id,
+                                     unsigned int buffer_size);
+
     void pub_global_map(map_warehouse* warehouse,
                         const ros::Time stamp);
 
@@ -55,7 +60,8 @@ public:
     void pub_global_local_map(map_warehouse* warehouse,
                               local_map_cartesian* localmap,
                               const ros::Time stamp);
-
+    void pub_frontier(local_map_cartesian* localmap,
+                              const ros::Time stamp);
 };
 
 #endif // RVIZ_VIS_H

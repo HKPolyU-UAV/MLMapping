@@ -22,7 +22,9 @@ typedef struct CARTESIAN_CELL{
     unsigned int project2d_idx;
     unsigned int relevant_submap_idx;
     Vec3  center_pt;//in local frame center
+    Vec6I  neighbors; //neighbor cell ids in 1d vector
     bool  is_occupied;
+    // bool  observed_free;
     float log_odds;
     float sd;
 }CARTESIAN_CELL;

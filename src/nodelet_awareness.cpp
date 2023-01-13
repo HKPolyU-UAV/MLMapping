@@ -68,6 +68,8 @@ namespace mlmapping_ns
             //        tic_toc_ros tt;
             //        static double sum_t = 0;
             //        static int count = 0;
+            double time_gap = (pc_Ptr->header.stamp - pose_Ptr->header.stamp).toSec();
+            cout<<"Time gap between pcl and odom (ms): "<<time_gap*1000<<endl;
             auto t1 = std::chrono::system_clock::now();
             SE3 T_wb(SO3(Quaterniond(pose_Ptr->pose.pose.orientation.w,
                                      pose_Ptr->pose.pose.orientation.x,
@@ -134,11 +136,10 @@ namespace mlmapping_ns
             }
             auto t11 = std::chrono::system_clock::now();
             awareness_map->input_pc_pose(pc_eigen, T_wb);
+            
             awarenessmap_pub->pub(awareness_map, pose_Ptr->header.stamp);
 
-            a2w_pub->pub(awareness_map->T_wa,
-                         awareness_map->l2g_msg_hit_pts_l,
-                         awareness_map->l2g_msg_miss_pts_l,
+            a2w_pub->pub_a2l(awareness_map,
                          pose_Ptr->header.stamp);
             auto t2 = std::chrono::system_clock::now();
             std::chrono::duration<double> diff = t2 - t1;
@@ -225,9 +226,7 @@ namespace mlmapping_ns
             awareness_map->input_pc_pose(pc_eigen, T_wb);
             awarenessmap_pub->pub(awareness_map, pose_Ptr->header.stamp);
 
-            a2w_pub->pub(awareness_map->T_wa,
-                         awareness_map->l2g_msg_hit_pts_l,
-                         awareness_map->l2g_msg_miss_pts_l,
+            a2w_pub->pub_a2l(awareness_map,
                          pose_Ptr->header.stamp);
 
             //        sum_t+=tt.dT_ms();

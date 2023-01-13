@@ -25,7 +25,6 @@
 #include <mlmapping/awareness2local.h>
 #include <map_local.h>
 #include <msg_awareness2local.h>
-#include <rviz_vis.h>
 #include <map_warehouse.h>
 #include <tf2_ros/transform_broadcaster.h>
 #include <visualization_msgs/Marker.h>
@@ -52,6 +51,7 @@ private:
   map_warehouse* warehouse;
   msg_localmap*  localmap_pub;
   rviz_vis*      globalmap_publisher;
+  rviz_vis*      frontier_publisher;
   tf2_ros::TransformBroadcaster br;
   geometry_msgs::TransformStamped transformStamped_T_wl;
   bool visulize_raycasting;
@@ -74,9 +74,11 @@ private:
     SE3 T_wa;
     vector<Vec3> l2g_hit_a;
     vector<Vec3> l2g_miss_a;
+    vector<float> l2g_odds_a;
     ros::Time stamp;
-    msg_awareness2local::unpack(msg,T_wa,l2g_hit_a,l2g_miss_a,stamp);
-    local_map->input_pc_pose(l2g_hit_a,l2g_miss_a,T_wa,warehouse);
+    msg_awareness2local::unpack(msg,T_wa,l2g_hit_a,l2g_odds_a,l2g_miss_a,stamp);
+    local_map->input_pc_pose(l2g_hit_a,l2g_odds_a,l2g_miss_a,T_wa,warehouse);
+    auto t2 = std::chrono::system_clock::now();
     SE3 T_wl = local_map->T_wl;
     transformStamped_T_wl.transform.translation.x = T_wl.translation().x();
     transformStamped_T_wl.transform.translation.y = T_wl.translation().y();
@@ -99,7 +101,7 @@ private:
       //sum_t_esfd += tt.dT_ms();
     }
     globalmap_publisher->pub_global_local_map(warehouse,local_map,stamp);
-
+    frontier_publisher->pub_frontier(local_map,stamp);
     //count++;
     //cout << (sum_t_local/count) << "|" << (sum_t_2d/count) << "|" << (sum_t_esfd/count) << endl;
 
@@ -132,7 +134,7 @@ private:
         this->map_pub.publish(spheres);
       }
     }
-	auto t2 = std::chrono::system_clock::now();
+	
 	std::chrono::duration<double> diff = t2 - t1;
   total_t += diff.count()*1000;
 	printf("Local map time cost: %.8f ms, ave-time cost: %.8f\n", diff.count()*1000, total_t/++count);
@@ -159,7 +161,8 @@ private:
                         static_cast<float>(getDoubleVariableFromYaml(configFilePath,"mlmapping_lm_log_odds_max")),
                         static_cast<float>(getDoubleVariableFromYaml(configFilePath,"mlmapping_lm_measurement_hit")),
                         static_cast<float>(getDoubleVariableFromYaml(configFilePath,"mlmapping_lm_measurement_miss")),
-                        static_cast<float>(getDoubleVariableFromYaml(configFilePath,"mlmapping_lm_occupied_sh")));
+                        static_cast<float>(getDoubleVariableFromYaml(configFilePath,"mlmapping_lm_occupied_sh")),
+                        getBoolVariableFromYaml(configFilePath,"use_exploration_frontiers"));
     local_map->allocate_memory_for_local_map();
     warehouse = new map_warehouse();
 
@@ -202,7 +205,12 @@ private:
     globalmap_publisher->set_as_global_map_publisher(nh,"/global_map",
                                                      getStringFromYaml(configFilePath,"world_frame_id"),
                                                      5);
+    frontier_publisher = new rviz_vis();
+    frontier_publisher->set_as_frontier_publisher(nh,"/frontier",
+                                                     getStringFromYaml(configFilePath,"world_frame_id"),
+                                                     5);
     map_pub = nh.advertise<visualization_msgs::Marker>("/raycasting", 3);
+    
     //subscriber
     sub_from_local = nh.subscribe<mlmapping::awareness2local>(
           "/awareness2local",

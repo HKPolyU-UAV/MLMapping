@@ -37,6 +37,11 @@ awareness_map_cylindrical::awareness_map_cylindrical()
 {
 }
 
+size_t awareness_map_cylindrical::mapIdx_out(Vec3I Rho_Phi_z)  //for using this function outside this class (not inline)
+{
+    return this->mapIdx(Rho_Phi_z(0), Rho_Phi_z(1), Rho_Phi_z(2));
+}
+
 inline size_t awareness_map_cylindrical::mapIdx(Vec3I Rho_Phi_z)
 {
     return this->mapIdx(Rho_Phi_z(0), Rho_Phi_z(1), Rho_Phi_z(2));
@@ -66,8 +71,18 @@ void awareness_map_cylindrical::init_map(double d_Rho, double d_Phi_deg, double 
     this->nRho_x_nPhi = map_nRho * map_nPhi;
     this->map = std::unique_ptr<vector<CYLINDRICAL_CELL>>(new vector<CYLINDRICAL_CELL>());
     // this->map_tmp = std::unique_ptr<vector<CYLINDRICAL_CELL>>(new vector<CYLINDRICAL_CELL>());
-
     int idx_in_order = 0;
+    diff_range = 10;
+    for (int diff = -diff_range; diff < diff_range + 1; diff++)
+    {
+        vector<float> line;
+        for (int r = 0; r < n_Rho; r++)
+        {
+            line.emplace_back(get_odds(diff, r));
+            //   cout<<"odd: "<<line.back() << " at r: "<<r<<" at diff: "<<diff<<endl;
+        }
+        get_odds_table.emplace_back(line);
+    }
     for (int z = 0; z < this->map_nZ; z++)
     {
         for (int phi = 0; phi < this->map_nPhi; phi++)
@@ -95,8 +110,8 @@ void awareness_map_cylindrical::init_map(double d_Rho, double d_Phi_deg, double 
                 }
                 cell.idx = idx_in_order;
                 idx_in_order++;
-                this->map->push_back(cell);
-                // this->map_tmp->push_back(cell);
+                this->map->emplace_back(cell);
+                // this->map_tmp->emplace_back(cell);
             }
         }
     }
@@ -139,10 +154,100 @@ void awareness_map_cylindrical::clear_map()
     this->occupied_cell_idx.clear();
 }
 
+inline float awareness_map_cylindrical::sigma_in_dr(size_t x)
+{
+    float dis = (x * this->map_dRho);
+    return 0.00375 * dis * dis / this->map_dRho; // for realsense d435i
+}
+
+inline float awareness_map_cylindrical::standard_ND(float x)
+{
+    double a1 = 0.254829592;
+    double a2 = -0.284496736;
+    double a3 = 1.421413741;
+    double a4 = -1.453152027;
+    double a5 = 1.061405429;
+    double p = 0.3275911;
+
+    // Save the sign of x
+    int sign = 1;
+    if (x < 0)
+        sign = -1;
+    x = fabs(x) / sqrt(2.0);
+
+    // A&S formula 7.1.26
+    double t = 1.0 / (1.0 + p * x);
+    double y = 1.0 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * exp(-x * x);
+    // cout<<"y: "<<y<<" x: "<<x<<" exp: "<<exp(-x * x)<<endl;
+    return 0.5 * (1.0 + sign * y); // a close representation for the cumulative density function of a standard normal distribution, see http://www.johndcook.com/blog/cpp_phi/
+}
+
+float awareness_map_cylindrical::get_odds(int diff, size_t r)
+{
+    if (r == 0)
+    {
+        r = 1;
+    }
+    float up = standard_ND(static_cast<float>(diff + 0.5) / sigma_in_dr(r));
+    float down = standard_ND(static_cast<float>(diff - 0.5) / sigma_in_dr(r));
+    // cout<<"get odds: "<<up<<" "<<down<<endl;
+    float res = up - down < 0.001 ? 0.001 : up - down;
+    res = res >= 1 ? 0.999 : res;
+    return res / (1 - res);
+}
+
+inline void awareness_map_cylindrical::update_odds_hashmap(Vec3I rpz_idx, float odd)
+{
+    if (hit_idx_odds_hashmap.find(rpz_idx) == hit_idx_odds_hashmap.end())
+
+        hit_idx_odds_hashmap[rpz_idx] = odd;
+    else
+        hit_idx_odds_hashmap[rpz_idx] = 1 - (1 - hit_idx_odds_hashmap[rpz_idx]) * (1 - odd);
+}
+void awareness_map_cylindrical::update_hits(Vec3 p_l, Vec3I rpz_idx, size_t map_idx)
+{
+
+    vector<Vec3I> rpz_idx_l;
+    int raycasting_z;
+    double raycasting_rate = map->at(map_idx).raycasting_z_over_rho;
+    float odd;
+    Vec3I neighbor;
+
+    // l2g_msg_hit_pts_l.emplace_back(p_l);
+    // l2g_msg_hit_odds_l.emplace_back(get_odds_table[0+diff_range][rpz_idx[0]]);
+    update_odds_hashmap(rpz_idx, get_odds_table[0 + diff_range][rpz_idx[0]]);
+    // cout<<"added odds: "<<l2g_msg_hit_odds_l.back()<<endl;
+    for (auto diff_r = 1; diff_r < 3 * sigma_in_dr(rpz_idx[0]) && (rpz_idx[0] + diff_r < this->map_nRho); diff_r++)
+    {
+        raycasting_z = static_cast<int>(round(rpz_idx[2] + (diff_r * raycasting_rate)));
+        odd = get_odds_table[diff_r + diff_range][rpz_idx[0]];
+        if (0 <= raycasting_z && raycasting_z < map_nZ)
+        {
+            // l2g_msg_hit_pts_l.emplace_back(map->at(this->mapIdx(Vec3I(rpz_idx[0] + diff_r, rpz_idx[1], raycasting_z))).center_pt);
+            // l2g_msg_hit_odds_l.emplace_back(odd);
+            neighbor = {rpz_idx[0] + diff_r, rpz_idx[1], raycasting_z};
+            update_odds_hashmap(neighbor, odd);
+        }
+        odd = get_odds_table[-diff_r + diff_range][rpz_idx[0]];
+        raycasting_z = static_cast<int>(round(rpz_idx[2] - (diff_r * raycasting_rate)));
+        if (0 <= raycasting_z && raycasting_z < map_nZ)
+        {
+            // l2g_msg_hit_pts_l.emplace_back(map->at(this->mapIdx(Vec3I(rpz_idx[0] - diff_r, rpz_idx[1], raycasting_z))).center_pt);
+            // l2g_msg_hit_odds_l.emplace_back(odd);
+            neighbor = {rpz_idx[0] - diff_r, rpz_idx[1], raycasting_z};
+            update_odds_hashmap(neighbor, odd);
+        }
+        // cout<<"added odds other: "<<l2g_msg_hit_odds_l.back()<<endl;
+    }
+}
+
 void awareness_map_cylindrical::input_pc_pose(vector<Vec3> PC_s, SE3 T_wb)
 {
-    this->l2g_msg_hit_pts_l.clear();
-    this->l2g_msg_miss_pts_l.clear();
+    // this->l2g_msg_hit_pts_l.clear();
+    // this->l2g_msg_miss_pts_l.clear();
+    // this->l2g_msg_hit_odds_l.clear();
+    this->hit_idx_odds_hashmap.clear();
+    this->miss_idx_set.clear();
     // this->occupied_cell_idx.clear();
 
     // STEP 1: transfer from previous map
@@ -176,7 +281,7 @@ void awareness_map_cylindrical::input_pc_pose(vector<Vec3> PC_s, SE3 T_wb)
     //                 {
     //                     map->at(map_idx).is_occupied = true;
     //                     map->at(map_idx).sampled_xyz = transfered_pt_l;
-    //                     this->occupied_cell_idx.push_back(map_idx);
+    //                     this->occupied_cell_idx.emplace_back(map_idx);
     //                 }
     //             }
     //         }
@@ -192,14 +297,16 @@ void awareness_map_cylindrical::input_pc_pose(vector<Vec3> PC_s, SE3 T_wb)
         bool inside_range = xyz2RhoPhiZwithBoderCheck(p_l, rpz_idx, can_do_cast);
         if (inside_range)
         {
-            l2g_msg_hit_pts_l.push_back(p_l);
+            // l2g_msg_hit_pts_l.emplace_back(p_l);
+
             // set observerable
             map_idx = mapIdx(rpz_idx);
+            update_hits(p_l, rpz_idx, map_idx);
             // if(map->at(map_idx).is_occupied == false)
             // {
             //     map->at(map_idx).is_occupied = true;
             //     map->at(map_idx).sampled_xyz = p_l;
-            //     this->occupied_cell_idx.push_back(map_idx);
+            //     this->occupied_cell_idx.emplace_back(map_idx);
             // }
         }
         if (can_do_cast && visibility_check)
@@ -227,13 +334,14 @@ void awareness_map_cylindrical::input_pc_pose(vector<Vec3> PC_s, SE3 T_wb)
                 rpz_idx[2] = static_cast<int>(round(rpz_idx[2] - ((rpz_idx[0] - map_nRho + 1) * raycasting_rate)));
                 rpz_idx[0] = map_nRho - 1;
             }
-            for (int r = rpz_idx[0] - 2; r > 0; r--)
+            for (int r = rpz_idx[0] - 4; r > 0; r--)
             {
                 int diff_r = rpz_idx[0] - r;
                 int raycasting_z = static_cast<int>(round(rpz_idx[2] - (diff_r * raycasting_rate)));
                 // map->at(this->mapIdx(Vec3I(r,rpz_idx[1],raycasting_z))).is_occupied = false;
                 if (0 <= raycasting_z && raycasting_z < map_nZ)
-                    l2g_msg_miss_pts_l.push_back(map->at(this->mapIdx(Vec3I(r, rpz_idx[1], raycasting_z))).center_pt);
+                    miss_idx_set.emplace(this->mapIdx(Vec3I(r, rpz_idx[1], raycasting_z)));
+                    // l2g_msg_miss_pts_l.emplace_back(map->at(this->mapIdx(Vec3I(r, rpz_idx[1], raycasting_z))).center_pt);
             }
         }
 
