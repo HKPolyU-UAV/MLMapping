@@ -30,6 +30,7 @@
         <remap from="/mlmapping/pose"        to="/mavros/local_position/pose"/>
         <!-- Odom or pose -->
         <remap from="/mlmapping/odom"        to="/vicon_imu_ekf_odom"/>
+        <remap from="/mlmapping/imu"        to="/mavros/imu/data"/>
     </node>
 
     <node pkg="nodelet" type="nodelet" args="load mlmapping/LocalMapNodeletClass mlmapping_nodelet_manager"

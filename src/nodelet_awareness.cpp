@@ -6,6 +6,7 @@
 #include <message_filters/sync_policies/exact_time.h>
 #include <message_filters/sync_policies/approximate_time.h>
 #include <sensor_msgs/PointCloud2.h>
+#include <sensor_msgs/Imu.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/TransformStamped.h>
 #include <nav_msgs/Odometry.h>
@@ -37,12 +38,13 @@ namespace mlmapping_ns
         message_filters::Subscriber<sensor_msgs::PointCloud2> pc_sub;
         message_filters::Subscriber<geometry_msgs::PoseStamped> pose_sub;
         message_filters::Subscriber<nav_msgs::Odometry> odom_sub;
+        message_filters::Subscriber<sensor_msgs::Imu> imu_sub;
         typedef message_filters::sync_policies::ExactTime<sensor_msgs::PointCloud2, geometry_msgs::PoseStamped> ExactSyncPolicy;
-        typedef message_filters::sync_policies::ExactTime<sensor_msgs::PointCloud2, nav_msgs::Odometry> ExactSyncPolicyOdom;
+        typedef message_filters::sync_policies::ExactTime<sensor_msgs::PointCloud2, nav_msgs::Odometry, sensor_msgs::Imu> ExactSyncPolicyOdom;
         message_filters::Synchronizer<ExactSyncPolicy> *exactSync_;
         message_filters::Synchronizer<ExactSyncPolicyOdom> *OdomexactSync_;
         typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::PointCloud2, geometry_msgs::PoseStamped> ApproxSyncPolicy;
-        typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::PointCloud2, nav_msgs::Odometry> ApproxSyncPolicyOdom;
+        typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::PointCloud2, nav_msgs::Odometry, sensor_msgs::Imu> ApproxSyncPolicyOdom;
         message_filters::Synchronizer<ApproxSyncPolicy> *approxSync_;
         message_filters::Synchronizer<ApproxSyncPolicyOdom> *OdomapproxSync_;
         // publisher
@@ -53,6 +55,7 @@ namespace mlmapping_ns
         ros::Timer timer_;
         int count = 0;
         double time_total = 0;
+        double camera2odom_latency = 0;
         // variable
         awareness_map_cylindrical *awareness_map;
         int pc_sample_cnt;
@@ -63,24 +66,34 @@ namespace mlmapping_ns
         geometry_msgs::TransformStamped transformStamped_T_bs;
 
         void pc_odom_input_callback(const sensor_msgs::PointCloud2::ConstPtr &pc_Ptr,
-                                    const nav_msgs::Odometry::ConstPtr &pose_Ptr)
+                                    const nav_msgs::Odometry::ConstPtr &pose_Ptr,
+                                    const sensor_msgs::Imu::ConstPtr &imu_Ptr)
         {
             //        tic_toc_ros tt;
             //        static double sum_t = 0;
             //        static int count = 0;
-            double time_gap = (pc_Ptr->header.stamp - pose_Ptr->header.stamp).toSec();
-            cout<<"Time gap between pcl and odom (ms): "<<time_gap*1000<<endl;
+            double ros_time_gap_odom = (pc_Ptr->header.stamp - pose_Ptr->header.stamp).toSec();
+            double ros_time_gap_imu = (pc_Ptr->header.stamp - imu_Ptr->header.stamp).toSec();
+            cout<<"Time gap between pcl and odom (ms): "<<ros_time_gap_odom*1000<<" pcl and imu (ms): "<<ros_time_gap_imu*1000<<endl;
+            double time_gap = ros_time_gap_imu - camera2odom_latency;  //pcl time - odom time
             auto t1 = std::chrono::system_clock::now();
-            SE3 T_wb(SO3(Quaterniond(pose_Ptr->pose.pose.orientation.w,
+            SO3 rot_og = SO3(Quaterniond(pose_Ptr->pose.pose.orientation.w,
                                      pose_Ptr->pose.pose.orientation.x,
                                      pose_Ptr->pose.pose.orientation.y,
-                                     pose_Ptr->pose.pose.orientation.z)),
+                                     pose_Ptr->pose.pose.orientation.z));
+            Vec3 rot_dot = rot_og.matrix() * Vec3(imu_Ptr->angular_velocity.x, imu_Ptr->angular_velocity.y,imu_Ptr->angular_velocity.z);
+            Vec3 rot_cp = rot_og.log() + time_gap * rot_dot;  //lie algebra
+            SE3 T_wb(SO3::exp(rot_cp),  //lie group
                      Vec3(pose_Ptr->pose.pose.position.x,
                           pose_Ptr->pose.pose.position.y,
-                          pose_Ptr->pose.pose.position.z));
+                          pose_Ptr->pose.pose.position.z) + (ros_time_gap_odom - camera2odom_latency) * Vec3(pose_Ptr->twist.twist.linear.x,
+                          pose_Ptr->twist.twist.linear.y,
+                          pose_Ptr->twist.twist.linear.z));  //compensate the pose gap during the time_gap via linear model. THe position
+                                                             // and orientation are forwarded at the timestamp of point cloud
+            
             if (publish_T_wb)
             {
-                transformStamped_T_wb.header.stamp = pose_Ptr->header.stamp;
+                transformStamped_T_wb.header.stamp = pc_Ptr->header.stamp;
                 transformStamped_T_wb.transform.translation.x = T_wb.translation().x();
                 transformStamped_T_wb.transform.translation.y = T_wb.translation().y();
                 transformStamped_T_wb.transform.translation.z = T_wb.translation().z();
@@ -89,13 +102,13 @@ namespace mlmapping_ns
                 transformStamped_T_wb.transform.rotation.z = T_wb.so3().unit_quaternion().z();
                 transformStamped_T_wb.transform.rotation.w = T_wb.so3().unit_quaternion().w();
                 br.sendTransform(transformStamped_T_wb);
-                transformStamped_T_wa.header.stamp = pose_Ptr->header.stamp;
+                transformStamped_T_wa.header.stamp = pc_Ptr->header.stamp;
                 transformStamped_T_wa.transform.translation = transformStamped_T_wb.transform.translation;
                 br.sendTransform(transformStamped_T_wa);
             }
             if (publish_T_bs)
             {
-                transformStamped_T_bs.header.stamp = pose_Ptr->header.stamp;
+                transformStamped_T_bs.header.stamp = pc_Ptr->header.stamp;
                 br.sendTransform(transformStamped_T_bs);
             }
             auto t10 = std::chrono::system_clock::now();
@@ -137,10 +150,10 @@ namespace mlmapping_ns
             auto t11 = std::chrono::system_clock::now();
             awareness_map->input_pc_pose(pc_eigen, T_wb);
             
-            awarenessmap_pub->pub(awareness_map, pose_Ptr->header.stamp);
+            awarenessmap_pub->pub(awareness_map, pc_Ptr->header.stamp);
 
             a2w_pub->pub_a2l(awareness_map,
-                         pose_Ptr->header.stamp);
+                         pc_Ptr->header.stamp);
             auto t2 = std::chrono::system_clock::now();
             std::chrono::duration<double> diff = t2 - t1;
             // std::chrono::duration<double> diff = t11 - t10;
@@ -257,7 +270,7 @@ namespace mlmapping_ns
             string configFilePath;
             nh.getParam("/mlmapping_configfile", configFilePath);
             cout << "config file path: " << configFilePath << endl;
-
+            camera2odom_latency = getDoubleVariableFromYaml(configFilePath, "camera2odom_latency");
             // init map
             pc_sample_cnt = getIntVariableFromYaml(configFilePath, "mlmapping_sample_cnt");
             awareness_map = new awareness_map_cylindrical();
@@ -313,8 +326,9 @@ namespace mlmapping_ns
                 if (use_odom)
                 {
                     odom_sub.subscribe(nh, "/mlmapping/odom", 10);
-                    OdomexactSync_ = new message_filters::Synchronizer<ExactSyncPolicyOdom>(ExactSyncPolicyOdom(5), pc_sub, odom_sub);
-                    OdomexactSync_->registerCallback(boost::bind(&AwarenessMapNodeletClass::pc_odom_input_callback, this, _1, _2));
+                    imu_sub.subscribe(nh, "/mlmapping/imu", 1);
+                    OdomexactSync_ = new message_filters::Synchronizer<ExactSyncPolicyOdom>(ExactSyncPolicyOdom(5), pc_sub, odom_sub, imu_sub);
+                    OdomexactSync_->registerCallback(boost::bind(&AwarenessMapNodeletClass::pc_odom_input_callback, this, _1, _2, _3));
                 }
                 else
 
@@ -331,8 +345,9 @@ namespace mlmapping_ns
                 if (use_odom)
                 {
                     odom_sub.subscribe(nh, "/mlmapping/odom", 1);
-                    OdomapproxSync_ = new message_filters::Synchronizer<ApproxSyncPolicyOdom>(ApproxSyncPolicyOdom(100), pc_sub, odom_sub);
-                    OdomapproxSync_->registerCallback(boost::bind(&AwarenessMapNodeletClass::pc_odom_input_callback, this, _1, _2));
+                    imu_sub.subscribe(nh, "/mlmapping/imu", 1);
+                    OdomapproxSync_ = new message_filters::Synchronizer<ApproxSyncPolicyOdom>(ApproxSyncPolicyOdom(100), pc_sub, odom_sub, imu_sub);
+                    OdomapproxSync_->registerCallback(boost::bind(&AwarenessMapNodeletClass::pc_odom_input_callback, this, _1, _2,_3));
                 }
                 else
 
