@@ -45,9 +45,9 @@ void rviz_vis::set_as_global_map_publisher(ros::NodeHandle &nh,
 }
 
 void rviz_vis::set_as_frontier_publisher(ros::NodeHandle &nh,
-                               string topic_name,
-                               string frame_id,
-                               unsigned int buffer_size)
+                                         string topic_name,
+                                         string frame_id,
+                                         unsigned int buffer_size)
 {
     this->map_pub = nh.advertise<sensor_msgs::PointCloud2>(topic_name, buffer_size);
     this->frame_id = frame_id;
@@ -260,7 +260,7 @@ void rviz_vis::pub_global_map(map_warehouse *warehouse,
 //             pc->points.emplace_back(iter->first[0]*localmap->map_dxyz_obv,
 //             iter->first[1]*localmap->map_dxyz_obv,
 //             iter->first[2]*localmap->map_dxyz_obv);
-        
+
 //     }
 //     pc->width = pc->points.size();
 //     pcl::toROSMsg(*pc, output);
@@ -286,15 +286,16 @@ void rviz_vis::pub_frontier(local_map_cartesian *localmap,
     // localmap->clear_map();
     // pt =  localmap->global_xyzidx(aa);
     // localmap->allocate_memory_for_local_map();
-    for (auto iter = localmap->frontier_group_map.begin(); iter != localmap->frontier_group_map.end(); iter++)
+    for (auto iter = localmap->observed_group_map.begin(); iter != localmap->observed_group_map.end(); iter++)
     {
-    for (auto it = iter->second.begin(); it != iter->second.end(); it++)
-    {
+        // int subbox_id = 0;
+        for (auto it = iter->second.frontier.begin(); it != iter->second.frontier.end(); it++)
+        {
             // PointP p1 = localmap->subbox_id2xyz_glb(pt,2);
-            
-            pc->points.emplace_back(localmap->subbox_id2xyz_glb(iter->first,*it));
+
+            pc->points.emplace_back(localmap->subbox_id2xyz_glb(iter->first, *it));
+        }
         
-    }
     }
     pc->width = pc->points.size();
     pcl::toROSMsg(*pc, output);
@@ -311,21 +312,21 @@ void rviz_vis::pub_global_local_map(map_warehouse *warehouse,
     PointCloudP_ptr pc(new PointCloudP);
     pc->header.frame_id = this->frame_id;
     pc->height = 1;
-    for (auto submap : warehouse->warehouse)
+    int cnt = 0;
+    for (auto iter = localmap->observed_group_map.begin(); iter != localmap->observed_group_map.end(); iter++)
     {
-        for (auto cell : submap.cells)
+        int subbox_id = 0;
+        cout<<"global box id: "<<iter->first.transpose()<<" number: "<<cnt++<<endl;
+        for (auto it = iter->second.occupancy.begin(); it != iter->second.occupancy.end(); it++)
         {
-            pc->points.push_back(PointP(cell.pt_w.x(), cell.pt_w.y(), cell.pt_w.z()));
+            // PointP p1 = localmap->subbox_id2xyz_glb(pt,2);
+            if (*it == 'o')
+            {
+                pc->points.emplace_back(localmap->subbox_id2xyz_glb(iter->first, subbox_id));
+                // cout<<"point: "<<pc->points.back()<<"glb id: "<<iter->first<<"subbox id: "<<*it<<endl;
+            }
+            subbox_id++;
         }
-    }
-    Vec3 center_offset = localmap->map_center_xyz;
-    // for (auto i:localmap->occupied_cell_idx)
-    for (auto iter = localmap->occupied_cell_idx_map.begin(); iter != localmap->occupied_cell_idx_map.end(); ++iter)
-    {
-        geometry_msgs::Point point;
-        Vec3 pt = localmap->map->at(iter->first).center_pt;
-        pt += center_offset;
-        pc->points.push_back(PointP(pt.x(), pt.y(), pt.z()));
     }
 
     pc->width = pc->points.size();

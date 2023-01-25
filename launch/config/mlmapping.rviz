@@ -72,15 +72,15 @@ Visualization Manager:
       Frames:
         All Enabled: false
         awareness_frame:
-          Value: false
+          Value: true
         body_frame:
           Value: true
         camera_depth_optical_frame:
           Value: true
         local_frame:
-          Value: false
+          Value: true
         map:
-          Value: false
+          Value: true
       Marker Alpha: 1
       Marker Scale: 10
       Name: TF
@@ -147,8 +147,8 @@ Visualization Manager:
         - Alpha: 1
           Autocompute Intensity Bounds: true
           Autocompute Value Bounds:
-            Max Value: 4
-            Min Value: -0.800000011920929
+            Max Value: 3.9000000953674316
+            Min Value: -0.5
             Value: true
           Axis: Z
           Channel Name: intensity
@@ -244,22 +244,22 @@ Visualization Manager:
       Color: 239; 41; 41
       Color Transformer: FlatColor
       Decay Time: 0
-      Enabled: true
+      Enabled: false
       Invert Rainbow: false
       Max Color: 255; 255; 255
       Min Color: 0; 0; 0
-      Name: PointCloud2
+      Name: frontiers
       Position Transformer: XYZ
       Queue Size: 10
       Selectable: true
       Size (Pixels): 5
-      Size (m): 0.5
+      Size (m): 0.20000000298023224
       Style: Spheres
       Topic: /frontier
       Unreliable: false
       Use Fixed Frame: true
       Use rainbow: true
-      Value: true
+      Value: false
     - Class: rviz/Image
       Enabled: true
       Image Topic: /camera/depth/image_rect_raw
@@ -308,17 +308,17 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: -0.8879077434539795
-        Y: -0.8084471821784973
-        Z: 2.986097574234009
+        X: -1.6448792219161987
+        Y: -0.7760013341903687
+        Z: 2.690537929534912
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.45979827642440796
+      Pitch: 0.7347980737686157
       Target Frame: body_frame
-      Yaw: 3.106292724609375
+      Yaw: 3.146284580230713
     Saved: ~
 Window Geometry:
   Displays:

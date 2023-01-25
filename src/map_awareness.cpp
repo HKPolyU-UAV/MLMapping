@@ -1,55 +1,15 @@
 #include "map_awareness.h"
-#define deg2rad M_PI / 180
-inline double awareness_map_cylindrical::fast_atan2(double y, double x)
-{
-    // 1. map the input to 0-1
-    double input = y / x;
-    double a_input = abs(input);
-    double res;
-    //   int sign = a_input/input;
-    if (a_input > 1)
-    {
-        res = copysign(deg2rad * (90 - fast_atan(1 / a_input)), input);
-    }
-    else
-    {
-        res = copysign(deg2rad * fast_atan(a_input), input);
-    }
-    if (x > 0)
-    {
-        return res;
-    }
-    else if (y >= 0)
-    {
-        return res + M_PI;
-    }
-    else
-    {
-        return res - M_PI;
-    }
-}
 
-inline double awareness_map_cylindrical::fast_atan(double x)
-{
-    return x * (45 - (x - 1) * (14 + 3.83 * x));
-}
+
 awareness_map_cylindrical::awareness_map_cylindrical()
 {
 }
 
-size_t awareness_map_cylindrical::mapIdx_out(Vec3I Rho_Phi_z)  //for using this function outside this class (not inline)
-{
-    return this->mapIdx(Rho_Phi_z(0), Rho_Phi_z(1), Rho_Phi_z(2));
-}
+// size_t awareness_map_cylindrical::mapIdx_out(Vec3I Rho_Phi_z)  //for using this function outside this class (not inline)
+// {
+//     return this->mapIdx(Rho_Phi_z(0), Rho_Phi_z(1), Rho_Phi_z(2));
+// }
 
-inline size_t awareness_map_cylindrical::mapIdx(Vec3I Rho_Phi_z)
-{
-    return this->mapIdx(Rho_Phi_z(0), Rho_Phi_z(1), Rho_Phi_z(2));
-}
-inline size_t awareness_map_cylindrical::mapIdx(int Rho, int Phi, int z)
-{
-    return static_cast<size_t>(z * this->nRho_x_nPhi + Phi * this->map_nRho + Rho);
-}
 
 void awareness_map_cylindrical::setTbs(SE3 T_bs_in)
 {
@@ -154,33 +114,6 @@ void awareness_map_cylindrical::clear_map()
     this->occupied_cell_idx.clear();
 }
 
-inline float awareness_map_cylindrical::sigma_in_dr(size_t x)
-{
-    float dis = (x * this->map_dRho);
-    return 0.00375 * dis * dis / this->map_dRho; // for realsense d435i
-}
-
-inline float awareness_map_cylindrical::standard_ND(float x)
-{
-    double a1 = 0.254829592;
-    double a2 = -0.284496736;
-    double a3 = 1.421413741;
-    double a4 = -1.453152027;
-    double a5 = 1.061405429;
-    double p = 0.3275911;
-
-    // Save the sign of x
-    int sign = 1;
-    if (x < 0)
-        sign = -1;
-    x = fabs(x) / sqrt(2.0);
-
-    // A&S formula 7.1.26
-    double t = 1.0 / (1.0 + p * x);
-    double y = 1.0 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * exp(-x * x);
-    // cout<<"y: "<<y<<" x: "<<x<<" exp: "<<exp(-x * x)<<endl;
-    return 0.5 * (1.0 + sign * y); // a close representation for the cumulative density function of a standard normal distribution, see http://www.johndcook.com/blog/cpp_phi/
-}
 
 float awareness_map_cylindrical::get_odds(int diff, size_t r)
 {
@@ -196,14 +129,7 @@ float awareness_map_cylindrical::get_odds(int diff, size_t r)
     return res / (1 - res);
 }
 
-inline void awareness_map_cylindrical::update_odds_hashmap(Vec3I rpz_idx, float odd)
-{
-    if (hit_idx_odds_hashmap.find(rpz_idx) == hit_idx_odds_hashmap.end())
 
-        hit_idx_odds_hashmap[rpz_idx] = odd;
-    else
-        hit_idx_odds_hashmap[rpz_idx] = 1 - (1 - hit_idx_odds_hashmap[rpz_idx]) * (1 - odd);
-}
 void awareness_map_cylindrical::update_hits(Vec3 p_l, Vec3I rpz_idx, size_t map_idx)
 {
 

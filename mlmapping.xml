@@ -1,16 +1,9 @@
 <library path="lib/libmlmapping">
 
-        <class name="mlmapping/AwarenessMapNodeletClass" type="mlmapping_ns::AwarenessMapNodeletClass"
+        <class name="mlmapping/MlMapNodeletClass" type="mlmapping_ns::MlMapNodeletClass"
 		base_class_type="nodelet::Nodelet">
 		<description>
-                        AwarenessMapNodeletClass
-		</description>
-	</class>
-
-        <class name="mlmapping/LocalMapNodeletClass" type="mlmapping_ns::LocalMapNodeletClass"
-		base_class_type="nodelet::Nodelet">
-		<description>
-                        LocalMapNodeletClass
+                        MlMapNodeletClass
 		</description>
 	</class>
 

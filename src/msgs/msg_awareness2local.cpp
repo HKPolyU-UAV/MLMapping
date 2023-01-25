@@ -21,7 +21,7 @@ void msg_awareness2local::pub_a2l(awareness_map_cylindrical *a_map, ros::Time st
     for(auto iter = a_map->hit_idx_odds_hashmap.begin(); iter != a_map->hit_idx_odds_hashmap.end(); iter++)
     {
         geometry_msgs::Vector3 geo_pt;
-        Vec3 geo_pt_vec = a_map->map->at(a_map->mapIdx_out(iter->first)).center_pt;
+        Vec3 geo_pt_vec = a_map->map->at(a_map->mapIdx(iter->first)).center_pt;
         geo_pt.x = geo_pt_vec[0];
         geo_pt.y = geo_pt_vec[1];
         geo_pt.z = geo_pt_vec[2];
