@@ -1,7 +1,7 @@
 # MLMapping(Multilayer Mapping Kit)-Embedded version
 
 ### Use it with a planner
-You can acquire the information of one global position in the world from the map data structure directly with this **Embedded version**. Just build this package first in your workspace, include the header file ````#include <mlmap.h>```` in your project, and use the interface functions. The initialization only need the ros nodehandle, and it receive the ros messages automatically to build the map. Check nodelet_map.cpp for the detail guidance.
+You can acquire the information of one global position in the world from the map data structure directly with this **Embedded version**. Just build this package first in your workspace, include the header file ````#include <mlmap.h>```` in your project, and use the interface functions. The initialization only need the ros nodehandle, and it receive the ros messages automatically to build the map. Check nodelet_map.cpp for the detail guidance. It is very fast, and most map update steps can be finished **within 2 ms**.
 
 **Interface functions** 
 
@@ -23,10 +23,15 @@ float mlmap::getOdd(Vec3 pos_w);
 Get the gradient of the odds of the queried position (the gradient is a vector heading to the neighboring cell of the lowest odds of occupancy):
 ````
 Vec3 mlmap::getOddGrad(Vec3 pos_w);
+
 ````
 
+The latest demo (red dots are the frontiers of the un-explored space, write for exploration task):
+
+<img src="others/mapping_new.gif" width="800">
+
 ### Introduction
-**MLMapping** is a multilayer mapping framework designed for autonomous UAV navigation applications. In this framework, we divided the map into three layers: awareness, local, and global. The awareness map is constructed on the cylindrical coordinate, which enables fast raycasting. The local map is a probability-based volumetric map. The global map adopts dynamic memory management, allocating memory for the active mapping area, and recycling the memory from the inactive mapping area. The framework supports different kinds of map outputs for the global or local path planners.
+**MLMapping** is a multilayer mapping framework designed for autonomous UAV navigation applications. In this framework, we divided the map into three layers: awareness, local, and global. The awareness map is constructed on the cylindrical coordinate, which enables fast raycasting. The local map is a probability-based volumetric map. The global map adopts dynamic memory management, allocating memory for the active mapping area, and recycling the memory from the inactive mapping area. The framework supports different kinds of map outputs for the global or local path planners. 
 
 ### Videos:
 <a href="https://www.youtube.com/embed/kBLQzIB_kWo" target="_blank"><img src="http://img.youtube.com/vi/kBLQzIB_kWo/0.jpg" 
