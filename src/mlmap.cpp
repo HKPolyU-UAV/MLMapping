@@ -295,7 +295,7 @@ void mlmap::depth_odom_input_callback(const sensor_msgs::Image::ConstPtr &img_Pt
     pc_eigen.clear();
     double ros_time_gap_odom = (img_Ptr->header.stamp - pose_Ptr->header.stamp).toSec();
     double ros_time_gap_imu = (img_Ptr->header.stamp - imu_Ptr->header.stamp).toSec();
-    cout << "Time gap between pcl and odom (ms): " << ros_time_gap_odom * 1000 << " pcl and imu (ms): " << ros_time_gap_imu * 1000 << endl;
+    // cout << "Time gap between pcl and odom (ms): " << ros_time_gap_odom * 1000 << " pcl and imu (ms): " << ros_time_gap_imu * 1000 << endl;
     double time_gap = ros_time_gap_imu - camera2odom_latency; // pcl time - odom time
     auto t1 = std::chrono::system_clock::now();
 

@@ -161,13 +161,14 @@ void local_map_cartesian::input_pc_pose_direct(awareness_map_cylindrical *a_map,
         // size_t map_idx = mapIdx(xyz_idx);
         if (allocate_ram(glb_idx))
         {
-            observed_group_map[glb_idx].log_odds[subbox_id] += log10(pair_.second);
-            if (observed_group_map[glb_idx].log_odds[subbox_id] > log_odds_max)
+            
+            if (observed_group_map[glb_idx].log_odds[subbox_id] <= log_odds_max)
             {
-                observed_group_map[glb_idx].log_odds[subbox_id] = log_odds_max;
+                observed_group_map[glb_idx].log_odds[subbox_id] += logit(pair_.second);
+                // observed_group_map[glb_idx].log_odds[subbox_id] = log_odds_max;
             }
             // set observerable
-            if (observed_group_map[glb_idx].log_odds[subbox_id] > log_odds_occupied_sh)
+            if (observed_group_map[glb_idx].log_odds[subbox_id] > log_odds_occupied_sh && observed_group_map[glb_idx].occupancy[subbox_id] != 'o')
             {
                 observed_group_map[glb_idx].occupancy[subbox_id] = 'o';
                 observed_group_map[glb_idx].frontier.erase(subbox_id);
@@ -189,13 +190,14 @@ void local_map_cartesian::input_pc_pose_direct(awareness_map_cylindrical *a_map,
         // map->at(map_idx).observed = true;
         if (allocate_ram(glb_idx))
         {
-            observed_group_map[glb_idx].log_odds[subbox_id] += log_odds_miss; // log_odds_miss is negative, so add it
-            if (observed_group_map[glb_idx].log_odds[subbox_id] < log_odds_min)
+            
+            if (observed_group_map[glb_idx].log_odds[subbox_id] >= log_odds_min)
             {
-                observed_group_map[glb_idx].log_odds[subbox_id] = log_odds_min;
+                observed_group_map[glb_idx].log_odds[subbox_id] += log_odds_miss; // log_odds_miss is negative, so add it
+                // observed_group_map[glb_idx].log_odds[subbox_id] = log_odds_min;
             }
             // set free
-            if (observed_group_map[glb_idx].log_odds[subbox_id] < log_odds_occupied_sh)
+            if (observed_group_map[glb_idx].log_odds[subbox_id] < log_odds_occupied_sh && observed_group_map[glb_idx].occupancy[subbox_id] != 'f')
             {
                 if (observed_group_map[glb_idx].occupancy[subbox_id] == 'u' && apply_explored_area)
                     update_observation(glb_idx, subbox_id, p_w);

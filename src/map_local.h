@@ -5,6 +5,7 @@
 #include <data_type.h>
 #include <map_warehouse.h>
 #include "map_awareness.h"
+#define logit(x) (log10((x) / (1 - (x))))
 typedef struct SUBMAP_IN_LOCAL_PARA
 {
     unsigned int submap_nxy;
@@ -133,7 +134,7 @@ public:
     inline bool inside_exp_bd(Vec3 pt_w);
     void update_observation(Vec3I glb_idx, size_t subbox_id, Vec3 pt_w);
     inline size_t get_subbox_id(Vec3 pt_w);
-    inline size_t get_subbox_id(Vec3 pt_w, Vec3I glb_idx);
+    inline size_t get_subbox_id(Vec3 &pt_w, Vec3I &glb_idx);
     inline PointP subbox_id2xyz_glb(Vec3I origin, int idx);
     inline Vec3 subbox_id2xyz_glb_vec(Vec3I origin, int idx);
     inline void get_global_idx(Vec3 pt_w, Vec3I &glb_idx, size_t &subbox_id);
@@ -175,7 +176,7 @@ inline bool local_map_cartesian::inside_exp_bd(Vec3 pt_w)
             pt_w[2] >= global_bd[4] && pt_w[2] < global_bd[5]);
 }
 
-inline size_t local_map_cartesian::get_subbox_id(Vec3 pt_w, Vec3I glb_idx)
+inline size_t local_map_cartesian::get_subbox_id(Vec3 &pt_w, Vec3I &glb_idx)
 {
 
     return subbox_cell_id_table[Vec3I(floor(pt_w[0] / map_dxyz_obv_sub) - glb_idx[0] * subbox_nxyz,

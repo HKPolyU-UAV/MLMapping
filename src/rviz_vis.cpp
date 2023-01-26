@@ -316,7 +316,7 @@ void rviz_vis::pub_global_local_map(map_warehouse *warehouse,
     for (auto iter = localmap->observed_group_map.begin(); iter != localmap->observed_group_map.end(); iter++)
     {
         int subbox_id = 0;
-        cout<<"global box id: "<<iter->first.transpose()<<" number: "<<cnt++<<endl;
+        // cout<<"global box id: "<<iter->first.transpose()<<" number: "<<cnt++<<endl;
         for (auto it = iter->second.occupancy.begin(); it != iter->second.occupancy.end(); it++)
         {
             // PointP p1 = localmap->subbox_id2xyz_glb(pt,2);

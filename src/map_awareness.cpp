@@ -126,7 +126,8 @@ float awareness_map_cylindrical::get_odds(int diff, size_t r)
     // cout<<"get odds: "<<up<<" "<<down<<endl;
     float res = up - down < 0.001 ? 0.001 : up - down;
     res = res >= 1 ? 0.999 : res;
-    return res / (1 - res);
+    return res;
+    // return res / (1 - res);   //use p/(1-p) already 
 }
 
 
