@@ -32,8 +32,9 @@ The latest demo (red dots are the frontiers of the un-explored space, write for 
 
 ### Introduction
 **MLMapping** is a multilayer mapping framework designed for autonomous UAV navigation applications. In this framework, we divided the map into three layers: awareness, local, and global. The awareness map is constructed on the cylindrical coordinate, which enables fast raycasting. The local map is a probability-based volumetric map. The global map adopts dynamic memory management, allocating memory for the active mapping area, and recycling the memory from the inactive mapping area. The framework supports different kinds of map outputs for the global or local path planners. 
-**This version** adopts a hybrid data structure to achieve dynamic memory management and merge the local and global layers into one layer. In this new mapping toolkit, we can query the occupancy of any given global position quickly and the mapping area is not limited by the pre-allocated RAM (that is what happened in the original local map layer). Also, the occupancy odds are consistent in the whole mapping ragion and can be queried quickly, too.
-### Videos:
+**This version** adopts a hybrid data structure to achieve dynamic memory management and merge the local and global layers into one layer. In this new mapping toolkit, we can query the occupancy of any given global position quickly and the mapping area is not limited by the pre-allocated RAM (that is what happened in the original local map layer). Also, the occupancy odds are consistent in the whole mapping ragion and can be queried quickly, too. **Please note that ESDF function is not needed anymore** since we hope odds gradient can replace the distance gradient in trajectory optimization.
+
+### Videos (original MLmapping):
 <a href="https://www.youtube.com/embed/kBLQzIB_kWo" target="_blank"><img src="http://img.youtube.com/vi/kBLQzIB_kWo/0.jpg" 
 alt="cla" width="480" height="300" border="1" /></a>
 
@@ -66,12 +67,16 @@ decompress the rosbag
 ````
 rosbag decompress corridor.bag
 ````
-run 
+run (modify the path of the ROS bag first in the launch file)
 ````
-roslaunch mlmapping rviz.launch
-roslaunch mlmapping mlmapping_bag_l515_t265.launch
+roslaunch mlmapping mlmapping_bag_sim2.launch
 ````
 
 ### Maintainer
-[Shengyang Chen](https://www.polyu.edu.hk/researchgrp/cywen/index.php/en/people/researchstudent.html)(Dept.ME,PolyU): shengyang.chen@connect.polyu.hk <br />
+[Han Chen](Dept.AAE,PolyU): stark.chen@connect.polyu.hk 
+
+### MLmapping's author
+[Shengyang Chen](Huawei Technologies Co., Ltd): shengyang.chen@connect.polyu.hk
+
+<br />
 
