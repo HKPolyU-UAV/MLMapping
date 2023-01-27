@@ -147,8 +147,7 @@ void local_map_cartesian::init_map(double d_xyz_in,
 
 
 
-void local_map_cartesian::input_pc_pose_direct(awareness_map_cylindrical *a_map,
-                                               map_warehouse *warehouse)
+void local_map_cartesian::input_pc_pose_direct(awareness_map_cylindrical *a_map)
 {
     // local_switch = false;
     SE3 T_wa = a_map->T_wa;

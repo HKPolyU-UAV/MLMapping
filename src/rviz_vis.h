@@ -3,7 +3,6 @@
 #include <ros/ros.h>
 #include <map_awareness.h>
 #include <map_local.h>
-#include <map_warehouse.h>
 #include <utils/include/all_utils.h>
 #include <visualization_msgs/Marker.h>
 #include <visualization_msgs/MarkerArray.h>
@@ -47,9 +46,6 @@ public:
                                      string frame_id,
                                      unsigned int buffer_size);
 
-    void pub_global_map(map_warehouse* warehouse,
-                        const ros::Time stamp);
-
 
     void pub_awareness_map(awareness_map_cylindrical* localmap,
                            const ros::Time stamp);
@@ -57,7 +53,7 @@ public:
     void pub_local_map(local_map_cartesian* localmap,
                        const ros::Time stamp);
 
-    void pub_global_local_map(map_warehouse* warehouse,
+    void pub_global_local_map(
                               local_map_cartesian* localmap,
                               const ros::Time stamp);
     void pub_frontier(local_map_cartesian* localmap,

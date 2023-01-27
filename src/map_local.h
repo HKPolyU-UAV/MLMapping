@@ -3,7 +3,7 @@
 
 #include <utils/include/all_utils.h>
 #include <data_type.h>
-#include <map_warehouse.h>
+// #include <map_warehouse.h>
 #include "map_awareness.h"
 #define logit(x) (log10((x) / (1 - (x))))
 typedef struct SUBMAP_IN_LOCAL_PARA
@@ -123,8 +123,7 @@ public:
     void devide_local_map_to_submaps();
     bool get_the_relevant_submap_for_new_localmap(vector<unsigned int> &relevant_and_occupied_idx,
                                                   vector<unsigned int> &unrelevant_and_occupied_idx);
-    void input_pc_pose_direct(awareness_map_cylindrical *a_map,
-                              map_warehouse *warehouse);
+    void input_pc_pose_direct(awareness_map_cylindrical *a_map);
     Vec3I xyz2xyzIdx(Vec3 xyz_w);
     bool xyz2xyzIdxwithBoderCheck(Vec3 xyz_w, Vec3I &xyz_idx);
     inline size_t mapIdx(Vec3I xyz_idx);

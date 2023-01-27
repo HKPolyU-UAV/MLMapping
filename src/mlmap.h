@@ -28,7 +28,6 @@
 #include <pcl/filters/voxel_grid.h>
 #include <msg_localmap.h>
 
-#include <map_warehouse.h>
 
 #include <visualization_msgs/Marker.h>
 #include <visualization_msgs/MarkerArray.h>
@@ -61,7 +60,7 @@ private:
     double camera2odom_latency = 0;
     SE3 T_wb;
     ros::Time stamp;
-    int pc_sample_cnt;
+    size_t pc_sample_cnt;
     bool publish_T_wb;
     bool publish_T_bs;
     geometry_msgs::TransformStamped transformStamped_T_wb;
@@ -69,7 +68,6 @@ private:
     geometry_msgs::TransformStamped transformStamped_T_bs;
     // original in local map node:
 
-    map_warehouse *warehouse;
     // msg_localmap *localmap_pub;
     rviz_vis *globalmap_publisher;
     rviz_vis *frontier_publisher;

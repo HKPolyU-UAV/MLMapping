@@ -68,7 +68,6 @@ add_library(mlmapping
     src/map_awareness.cpp
     src/map_local.cpp
     src/mlmap.cpp
-    src/map_warehouse.cpp
     src/rviz_vis.cpp
     src/msgs/msg_awareness2local.cpp
     src/msgs/msg_awareness.cpp

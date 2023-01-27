@@ -226,27 +226,6 @@ void rviz_vis::pub_local_map(local_map_cartesian *localmap, const ros::Time stam
 // typedef pcl::PointCloud<PointP>   PointCloudP;
 // typedef PointCloudP::Ptr          PointCloudP_ptr;
 
-void rviz_vis::pub_global_map(map_warehouse *warehouse,
-                              const ros::Time stamp)
-{
-    // cout << "publish global map" << endl;
-    sensor_msgs::PointCloud2 output;
-    PointCloudP_ptr pc(new PointCloudP);
-    pc->header.frame_id = this->frame_id;
-    pc->height = 1;
-    for (auto submap : warehouse->warehouse)
-    {
-        for (auto cell : submap.cells)
-        {
-            pc->points.push_back(PointP(cell.pt_w.x(), cell.pt_w.y(), cell.pt_w.z()));
-        }
-    }
-    pc->width = pc->points.size();
-    pcl::toROSMsg(*pc, output);
-    output.header.stamp = stamp;
-    map_pub.publish(output);
-}
-
 // void rviz_vis::pub_frontier(local_map_cartesian *localmap,
 //                             const ros::Time stamp)
 // {
@@ -303,7 +282,7 @@ void rviz_vis::pub_frontier(local_map_cartesian *localmap,
     map_pub.publish(output);
 }
 
-void rviz_vis::pub_global_local_map(map_warehouse *warehouse,
+void rviz_vis::pub_global_local_map(
                                     local_map_cartesian *localmap,
                                     const ros::Time stamp)
 {
@@ -312,7 +291,7 @@ void rviz_vis::pub_global_local_map(map_warehouse *warehouse,
     PointCloudP_ptr pc(new PointCloudP);
     pc->header.frame_id = this->frame_id;
     pc->height = 1;
-    int cnt = 0;
+    // int cnt = 0;
     for (auto iter = localmap->observed_group_map.begin(); iter != localmap->observed_group_map.end(); iter++)
     {
         int subbox_id = 0;

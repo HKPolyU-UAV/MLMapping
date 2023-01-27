@@ -27,8 +27,7 @@ mlmapping_cam_cy: 117.238
 mlmapping_cam_fx: 213.728866577
 mlmapping_cam_fy: 213.728866577
 camera2odom_latency: 0.085 # the latency (second) of the depth image minus the latency of the odom (imu). It can be estimated by the method in Dr. Han Chen's PHD thesis
-use_exactsync:     false
-use_odom:     true
+
 use_exploration_frontiers: true
 mlmapping_sample_cnt:       500
 mlmapping_use_raycasting:   true

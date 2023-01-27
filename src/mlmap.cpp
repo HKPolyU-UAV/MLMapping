@@ -59,8 +59,8 @@ void mlmap::init_map(ros::NodeHandle &node_handle)
     // init publisher
     awarenessmap_pub = new msg_awareness(nh, "/mlmapping_awareness");
     a2w_pub = new msg_awareness2local(nh, "/awareness2local", 2);
-    bool use_exactsync = getBoolVariableFromYaml(configFilePath, "use_exactsync");
-    bool use_odom = getBoolVariableFromYaml(configFilePath, "use_odom");
+    // bool use_exactsync = getBoolVariableFromYaml(configFilePath, "use_exactsync");
+    // bool use_odom = getBoolVariableFromYaml(configFilePath, "use_odom");
 
     depth_sub.subscribe(nh, "/mlmapping/depth", 1);
     odom_sub.subscribe(nh, "/mlmapping/odom", 1);
@@ -82,7 +82,6 @@ void mlmap::init_map(ros::NodeHandle &node_handle)
                         static_cast<float>(getDoubleVariableFromYaml(configFilePath, "mlmapping_lm_occupied_sh")),
                         getBoolVariableFromYaml(configFilePath, "use_exploration_frontiers"));
     // local_map->allocate_memory_for_local_map();
-    warehouse = new map_warehouse();
 
     transformStamped_T_wl.header.frame_id = getStringFromYaml(configFilePath, "world_frame_id");
     transformStamped_T_wl.child_frame_id = getStringFromYaml(configFilePath, "local_frame_id");
@@ -209,7 +208,7 @@ void mlmap::visualize_raycast()
 void mlmap::update_map()
 {
     awareness_map->input_pc_pose(pc_eigen, T_wb);
-    local_map->input_pc_pose_direct(awareness_map, warehouse);
+    local_map->input_pc_pose_direct(awareness_map);
 }
 
 void mlmap::setFree_map_in_bound(Vec3 box_min, Vec3 box_max)
@@ -236,7 +235,7 @@ void mlmap::setFree_map_in_bound(Vec3 box_min, Vec3 box_max)
 
 void mlmap::visualize_map()
 {
-    globalmap_publisher->pub_global_local_map(warehouse, local_map, stamp);
+    globalmap_publisher->pub_global_local_map(local_map, stamp);
 }
 
 void mlmap::visualize_frontier()
@@ -326,9 +325,9 @@ void mlmap::depth_odom_input_callback(const sensor_msgs::Image::ConstPtr &img_Pt
     //  and orientation are forwarded at the timestamp of point cloud
     stamp = img_Ptr->header.stamp;
 
-    auto t10 = std::chrono::system_clock::now();
+    // auto t10 = std::chrono::system_clock::now();
     project_depth();
-    auto t11 = std::chrono::system_clock::now();
+    // auto t11 = std::chrono::system_clock::now();
 
     update_map();
     // main map update procedure is completed
