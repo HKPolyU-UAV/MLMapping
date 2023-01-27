@@ -73,10 +73,10 @@ roslaunch mlmapping mlmapping_bag_sim2.launch
 ````
 
 ### Maintainer
-[Han Chen](Dept.AAE,PolyU): stark.chen@connect.polyu.hk 
+Han Chen(Dept.AAE,PolyU): stark.chen@connect.polyu.hk 
 
 ### MLmapping's author
-[Shengyang Chen](Huawei Technologies Co., Ltd): shengyang.chen@connect.polyu.hk
+Shengyang Chen(Huawei Technologies Co., Ltd): shengyang.chen@connect.polyu.hk
 
 <br />
 
