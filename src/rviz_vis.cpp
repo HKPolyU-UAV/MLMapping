@@ -41,7 +41,10 @@ void rviz_vis::set_as_global_map_publisher(ros::NodeHandle &nh,
                                            unsigned int buffer_size)
 {
     this->map_pub = nh.advertise<sensor_msgs::PointCloud2>(topic_name, buffer_size);
+    cout << "frame id: " << endl;
     this->frame_id = frame_id;
+
+    cout << this->frame_id << endl;
 }
 
 void rviz_vis::set_as_frontier_publisher(ros::NodeHandle &nh,
@@ -52,9 +55,18 @@ void rviz_vis::set_as_frontier_publisher(ros::NodeHandle &nh,
     this->map_pub = nh.advertise<sensor_msgs::PointCloud2>(topic_name, buffer_size);
     this->frame_id = frame_id;
 }
+
+void rviz_vis::set_as_odds_publisher(ros::NodeHandle &nh,
+                                     string topic_name,
+                                     string frame_id,
+                                     unsigned int buffer_size)
+{
+    this->map_pub = nh.advertise<visualization_msgs::MarkerArray>(topic_name, buffer_size);
+    this->frame_id = frame_id;
+}
 // input: ratio is between 0 to 1
 // output: rgb color
-Vec3 sphereColer(double ratio)
+Vec3 spherecolor(double ratio)
 {
     // we want to normalize ratio so that it fits in to 6 regions
     // where each region is 256 units long
@@ -86,7 +98,7 @@ Vec3 sphereColer(double ratio)
     return Vec3(red / 260.0, grn / 260.0, blu / 260.0);
 }
 
-Vec3 cubeColer(double ratio)
+Vec3 cubecolor(double ratio)
 {
     // we want to normalize ratio so that it fits in to 6 regions
     // where each region is 256 units long
@@ -137,7 +149,7 @@ void rviz_vis::pub_awareness_map(awareness_map_cylindrical *localmap, const ros:
         spheres.points.push_back(point);
         std_msgs::ColorRGBA color;
         //        double ratio = (pt.z()-min_z)/range_z;
-        //        Vec3 rgb = sphereColer(ratio);
+        //        Vec3 rgb = spherecolor(ratio);
         //        color.r= static_cast<float>(rgb(0));
         //        color.g= static_cast<float>(rgb(1));
         //        color.b= static_cast<float>(rgb(2));
@@ -175,7 +187,7 @@ void rviz_vis::pub_local_map(local_map_cartesian *localmap, const ros::Time stam
         point.z = pt(2);
         cubes.points.push_back(point);
         double ratio = (pt.z() - min_z) / range_z;
-        Vec3 rgb = cubeColer(ratio);
+        Vec3 rgb = cubecolor(ratio);
         std_msgs::ColorRGBA color;
         color.r = static_cast<float>(rgb(0));
         color.g = static_cast<float>(rgb(1));
@@ -274,7 +286,6 @@ void rviz_vis::pub_frontier(local_map_cartesian *localmap,
 
             pc->points.emplace_back(localmap->subbox_id2xyz_glb(iter->first, *it));
         }
-        
     }
     pc->width = pc->points.size();
     pcl::toROSMsg(*pc, output);
@@ -283,11 +294,12 @@ void rviz_vis::pub_frontier(local_map_cartesian *localmap,
 }
 
 void rviz_vis::pub_global_local_map(
-                                    local_map_cartesian *localmap,
-                                    const ros::Time stamp)
+    local_map_cartesian *localmap,
+    const ros::Time stamp)
 {
-    // cout << "publish global map" << endl;
+
     sensor_msgs::PointCloud2 output;
+
     PointCloudP_ptr pc(new PointCloudP);
     pc->header.frame_id = this->frame_id;
     pc->height = 1;
@@ -312,4 +324,79 @@ void rviz_vis::pub_global_local_map(
     pcl::toROSMsg(*pc, output);
     output.header.stamp = stamp;
     map_pub.publish(output);
+}
+
+void rviz_vis::pub_odd_slice(local_map_cartesian *localmap,
+                             const ros::Time stamp, Fun_odds fun)
+{
+    visualization_msgs::MarkerArray mks;
+    visualization_msgs::Marker spheres, lines;
+    spheres.header.frame_id = this->frame_id;
+    spheres.header.stamp = stamp;
+    spheres.ns = "points";
+    spheres.type = visualization_msgs::Marker::CUBE_LIST;
+    spheres.action = visualization_msgs::Marker::ADD;
+    spheres.pose.orientation.w = 1.0;
+    spheres.scale.x = spheres.scale.y = 0.2;
+    spheres.scale.z = 0.01;
+    spheres.id = 0;
+
+    lines.header.frame_id = this->frame_id;
+    lines.header.stamp = stamp;
+    lines.ns = "lines";
+    lines.type = visualization_msgs::Marker::LINE_LIST;
+    lines.action = visualization_msgs::Marker::ADD;
+    lines.pose.orientation.w = 1.0;
+    lines.scale.x = 0.05;
+    lines.id = 0;
+    lines.color.r = lines.color.g = lines.color.b = 1.0;
+    for (auto iter = localmap->observed_group_map.begin(); iter != localmap->observed_group_map.end(); iter++)
+    {
+        int subbox_id = 0;
+        // cout<<"global box id: "<<iter->first.transpose()<<" number: "<<cnt++<<endl;
+        for (auto it = iter->second.log_odds.begin(); it != iter->second.log_odds.end(); it++)
+        {
+            // PointP p1 = localmap->subbox_id2xyz_glb(pt,2);
+            Vec3 pt = localmap->subbox_id2xyz_glb_vec(iter->first, subbox_id);
+            if (pt[2] < 0.701 && pt[2] > 0.699)
+            {
+                geometry_msgs::Point point;
+                point.x = pt[0];
+                point.y = pt[1];
+                point.z = pt[2];
+
+                spheres.points.push_back(point);
+                std_msgs::ColorRGBA color;
+                double ratio = logit_inv(*it);
+                Vec3 rgb = spherecolor(ratio);
+                color.r = static_cast<float>(rgb(0));
+                color.g = static_cast<float>(rgb(1));
+                color.b = static_cast<float>(rgb(2));
+                color.a = static_cast<float>(0.9);
+                spheres.colors.push_back(color);
+                
+                if (ratio > 0.8)
+                {
+                    geometry_msgs::Point point1;
+                    Vec3 grad = fun(pt,5);
+                    point1.x = point.x + grad[0];
+                    point1.y = point.y + grad[1];
+                    point1.z = point.z + grad[2];
+                    lines.points.emplace_back(point);
+                    lines.points.emplace_back(point1);
+                    
+                }
+                subbox_id++;
+                // cout<<"point: "<<pc->points.back()<<"glb id: "<<iter->first<<"subbox id: "<<*it<<endl;
+                // subbox_id++;
+            }
+        }
+    }
+    mks.markers.push_back(spheres);
+    mks.markers.push_back(lines);
+    // cout<<"size: "<<spheres.points.size()<<endl; 
+    if (spheres.points.size() != 0)
+    {
+        this->map_pub.publish(mks);
+    }
 }

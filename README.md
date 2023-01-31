@@ -30,6 +30,11 @@ The latest demo (red dots are the frontiers of the un-explored space, write for 
 
 <img src="others/mapping_new.gif" width="800">
 
+The odds map and the odds-gradient of those occupied cell (odds > 0.8), represented by the white lines:
+
+<img src="others/oddsgrad.gif" width="800">
+
+
 ### Introduction
 **MLMapping** is a multilayer mapping framework designed for autonomous UAV navigation applications. In this framework, we divided the map into three layers: awareness, local, and global. The awareness map is constructed on the cylindrical coordinate, which enables fast raycasting. The local map is a probability-based volumetric map. The global map adopts dynamic memory management, allocating memory for the active mapping area, and recycling the memory from the inactive mapping area. The framework supports different kinds of map outputs for the global or local path planners. 
 **This version** adopts a hybrid data structure to achieve dynamic memory management and merge the local and global layers into one layer. In this new mapping toolkit, we can query the occupancy of any given global position quickly and the mapping area is not limited by the pre-allocated RAM (that is what happened in the original local map layer). Also, the occupancy odds are consistent in the whole mapping ragion and can be queried quickly, too. **Please note that ESDF function is not needed anymore** since we hope odds gradient can replace the distance gradient in trajectory optimization.

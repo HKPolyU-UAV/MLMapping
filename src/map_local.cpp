@@ -12,14 +12,13 @@ void local_map_cartesian::update_observation(Vec3I glb_idx, size_t subbox_id, Ve
         return; // this subbox is observed completely, no need to update this region.
 
     observed_subboxes.emplace(glb_idx);
-    Mat6x4I nbrs = subbox_neighbors[subbox_id];
     Vec3I glb_idx_nb;
     size_t subbox_id_nb;
     for (auto i = 0; i < 6; i++)
     {
         Vec3 pt_w_nb = pt_w + nbr_disp_real[i];
-        glb_idx_nb = glb_idx + Vec3I(nbrs(i, 0), nbrs(i, 1), nbrs(i, 2)); // add the displacement of global idx
-        subbox_id_nb = nbrs(i, 3);
+        glb_idx_nb = glb_idx + subbox_neighbors[subbox_id].block(i,0,1,3).transpose(); // add the displacement of global idx
+        subbox_id_nb = subbox_neighbors[subbox_id](i, 3);
         // cout<<"i: "<<i<<" frontier pos: "<<pt_w_nb.transpose()<<" glb_idx_nb: "<<glb_idx_nb.transpose()<<" subbox_id: "<<subbox_id_nb<<endl;
         if (inside_exp_bd(pt_w_nb) && allocate_ram(glb_idx_nb) &&
             // observed_cell_global_idx_map.find(glb_idx) == observed_cell_global_idx_map.end() &&
@@ -29,7 +28,6 @@ void local_map_cartesian::update_observation(Vec3I glb_idx, size_t subbox_id, Ve
             break;
         }
     }
-
     // cout << "observe update" << endl;
     return;
 }
@@ -161,9 +159,10 @@ void local_map_cartesian::input_pc_pose_direct(awareness_map_cylindrical *a_map)
         if (allocate_ram(glb_idx))
         {
             
-            if (observed_group_map[glb_idx].log_odds[subbox_id] <= log_odds_max)
+            if (observed_group_map[glb_idx].log_odds[subbox_id] < log_odds_max)
             {
                 observed_group_map[glb_idx].log_odds[subbox_id] += logit(pair_.second);
+                observed_group_map[glb_idx].log_odds[subbox_id] = observed_group_map[glb_idx].log_odds[subbox_id] > log_odds_max ? log_odds_max : observed_group_map[glb_idx].log_odds[subbox_id];
                 // observed_group_map[glb_idx].log_odds[subbox_id] = log_odds_max;
             }
             // set observerable

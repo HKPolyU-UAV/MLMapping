@@ -28,7 +28,6 @@
 #include <pcl/filters/voxel_grid.h>
 #include <msg_localmap.h>
 
-
 #include <visualization_msgs/Marker.h>
 #include <visualization_msgs/MarkerArray.h>
 #include <independent_modules/l2grid2d.h>
@@ -39,9 +38,11 @@
 
 #define logit(x) (log10((x) / (1 - (x))))
 #define logit_inv(x) (pow(10, x) / (1 + pow(10, x)))
+
 class mlmap
 {
 private:
+    typedef Vec3 (*Fun_odds)(Vec3, size_t);
     // original in awareness map node:
     message_filters::Subscriber<sensor_msgs::PointCloud2> pc_sub;
     message_filters::Subscriber<sensor_msgs::Image> depth_sub;
@@ -71,6 +72,7 @@ private:
     // msg_localmap *localmap_pub;
     rviz_vis *globalmap_publisher;
     rviz_vis *frontier_publisher;
+    rviz_vis *odds_publisher;
     geometry_msgs::TransformStamped transformStamped_T_wl;
     bool visulize_raycasting;
     bool enable_project2d;
@@ -82,12 +84,15 @@ private:
     const double k_depth_scaling_factor_ = 1000.0;
     const double inv_factor = 1.0 / k_depth_scaling_factor_;
     int skip_pixel_;
-    ros::Publisher map_pub;
+    ros::Publisher map_pub, odds_pub;
     ros::NodeHandle nh;
     vector<Vec3> pc_eigen; // body frame
     cv::Mat depth_image_;
     float cx_, cy_, fx_, fy_;
     float odds_min, odds_max;
+    string world_id;
+    vector<Vec3I> glb_idx_nb_list = vector<Vec3I>(6);
+    vector<size_t> subbox_id_nb_list = vector<size_t>(6);
     void timerCb();
     void timerCb1();
     void depth_odom_input_callback(const sensor_msgs::Image::ConstPtr &img_Ptr,
@@ -117,12 +122,15 @@ public:
     inline float getOdd(Vec3 pos_w);
     inline float getOdd(Vec3I &glb_id, size_t subbox_id);
 
-    inline Vec3 getOddGrad(Vec3 pos_w);
-
+    inline Vec3 getOddGrad(Vec3 pos_w, size_t max_iter);
+    // inline Vec3 getOddGrad(Vec3I glb_id, size_t subbox_id, size_t max_iter);
     void visualize_map();
 
     void visualize_frontier();
     void visualize_raycast();
+    void visualize_odds(float height);
+    Vec3 getcolor(double ratio);
+    Vec3 getcolor_gray(double ratio);
 };
 
 inline int mlmap::getOccupancy(Vec3 pos_w)
@@ -150,7 +158,7 @@ inline int mlmap::getOccupancy(Vec3 pos_w)
         return UNKNOWN;
 }
 
-inline float mlmap::getOdd(Vec3 pos_w)  //return true odd
+inline float mlmap::getOdd(Vec3 pos_w) // return true odd
 {
 
     Vec3I glb_id;
@@ -174,7 +182,7 @@ inline float mlmap::getOdd(Vec3I &glb_id, size_t subbox_id)
         return logit_inv(local_map->observed_group_map[glb_id].log_odds[subbox_id]);
 }
 
-inline Vec3 mlmap::getOddGrad(Vec3 pos_w)
+inline Vec3 mlmap::getOddGrad(Vec3 pos_w, size_t max_iter = 5)
 {
     Vec3I glb_id;
     size_t subbox_id;
@@ -184,20 +192,98 @@ inline Vec3 mlmap::getOddGrad(Vec3 pos_w)
     float min_odd = getOdd(glb_id, subbox_id);
     float ori_odd = min_odd;
     float tmp_odd;
-    Vec3 Grad_drt;
-    Mat6x4I nbrs = local_map->subbox_neighbors[subbox_id];
-    for (auto i = 0; i < 6; i++)
+    bool flag = false;
+    // Vec3 Grad_drt;
+    // Mat6x4I neighbors = local_map->subbox_neighbors[subbox_id];
+    size_t iter;
+    // cout<<"Neighbor Mat:\n"<<neighbors<<endl;
+    for (iter = 0; iter < max_iter && !flag; iter++)
     {
-        glb_idx_nb = glb_id + Vec3I(nbrs(i, 0), nbrs(i, 1), nbrs(i, 2)); // add the displacement of global idx
-        subbox_id_nb = nbrs(i, 3);
-        tmp_odd = getOdd(glb_idx_nb, subbox_id_nb);
-        if (tmp_odd < min_odd)
+        for (auto i = 0; i < 6; i++)
         {
-            min_odd = tmp_odd;
-            glb_idx_nb_min = glb_idx_nb;
-            subbox_id_nb_min = subbox_id_nb;
+            if (iter == 0)
+            {
+                glb_idx_nb = glb_id + local_map->subbox_neighbors[subbox_id].block(i, 0, 1, 3).transpose(); // add the displacement of global idx
+                subbox_id_nb = local_map->subbox_neighbors[subbox_id](i, 3);
+                
+        // cout << "glb_id: " << glb_id.transpose() << " subbox_id: " <<subbox_id
+        //      << " glb_idx_nb: " << glb_idx_nb.transpose()<<" subbox_id_nb: " <<subbox_id_nb<<
+        //      " glb disp: "<<local_map->subbox_neighbors[subbox_id].block(i, 0, 1, 3)<< endl;   
+            }
+            else
+            {
+                glb_idx_nb = glb_idx_nb_list[i] + local_map->subbox_neighbors[subbox_id_nb_list[i]].block(i, 0, 1, 3).transpose();
+                subbox_id_nb = local_map->subbox_neighbors[subbox_id_nb_list[i]](i, 3); // keep searching along the original direction
+            }
+            glb_idx_nb_list[i] = glb_idx_nb;
+            subbox_id_nb_list[i] = subbox_id_nb;
+            tmp_odd = getOdd(glb_idx_nb, subbox_id_nb);
+            if (tmp_odd < min_odd)
+            {
+                min_odd = tmp_odd;
+                glb_idx_nb_min = glb_idx_nb;
+                subbox_id_nb_min = subbox_id_nb;
+                flag = true;
+            }
         }
     }
-    return (local_map->subbox_id2xyz_glb_vec(glb_idx_nb_min, subbox_id_nb_min) - pos_w) * (ori_odd - min_odd) * local_map->map_reso_inv;
+    if (flag)
+    {
+        // cout << "pos_w: " << pos_w.transpose() << " grad ori_dist: " << (local_map->subbox_id2xyz_glb_vec(glb_idx_nb_min, subbox_id_nb_min) - pos_w).transpose()
+            //  << " odd diff: " << (ori_odd - min_odd) << endl;
+
+        return (local_map->subbox_id2xyz_glb_vec(glb_idx_nb_min, subbox_id_nb_min) - pos_w) * (ori_odd - min_odd);
+    }
+    else
+        {
+            // cout <<"iter: "<<iter<< " pos_w: " << pos_w.transpose() << " grad ori_dist: " << (local_map->subbox_id2xyz_glb_vec(glb_idx_nb_min, subbox_id_nb_min) - pos_w).transpose()
+            //  << " odd diff: " << (ori_odd - min_odd) << endl;
+        return Vec3(0.0, 0.0, 0.0);
+        }
 }
+
+// inline Vec3 mlmap::getOddGrad(Vec3I glb_id, size_t subbox_id, size_t max_iter = 5)
+// {
+//     // Vec3I glb_id;
+//     // size_t subbox_id;
+//     // local_map->get_global_idx(pos_w, glb_id, subbox_id);
+//     Vec3I glb_idx_nb, glb_idx_nb_min;
+//     size_t subbox_id_nb, subbox_id_nb_min;
+//     float min_odd = getOdd(glb_id, subbox_id);
+//     float ori_odd = min_odd;
+//     float tmp_odd;
+//     bool flag = false;
+//     Vec3 Grad_drt;
+//     // Mat6x4I neighbors = local_map->subbox_neighbors[subbox_id];
+//     for (size_t iter = 0; iter < max_iter && !flag; iter++)
+//     {
+//         for (auto i = 0; i < 6; i++)
+//         {
+//             if (iter == 0)
+//             {
+//                 glb_idx_nb = glb_id + local_map->subbox_neighbors[subbox_id].block(i, 0, 1, 3); // add the displacement of global idx
+//                 subbox_id_nb = local_map->subbox_neighbors[subbox_id](i, 3);
+//             }
+//             else
+//             {
+//                 glb_idx_nb = glb_idx_nb_list[i] + local_map->subbox_neighbors[subbox_id_nb_list[i]].block(i, 0, 1, 3);
+//                 subbox_id_nb = local_map->subbox_neighbors[subbox_id_nb_list[i]](i, 3); // keep searching along the original direction
+//             }
+//             glb_idx_nb_list[i] = glb_idx_nb;
+//             subbox_id_nb_list[i] = subbox_id_nb;
+//             tmp_odd = getOdd(glb_idx_nb, subbox_id_nb);
+//             if (tmp_odd < min_odd)
+//             {
+//                 min_odd = tmp_odd;
+//                 glb_idx_nb_min = glb_idx_nb;
+//                 subbox_id_nb_min = subbox_id_nb;
+//                 flag = true;
+//             }
+//         }
+//     }
+//     if (flag)
+//         return (local_map->subbox_id2xyz_glb_vec(glb_idx_nb_min, subbox_id_nb_min) - pos_w) * (ori_odd - min_odd) * local_map->map_reso_inv;
+//     else
+//         return Vec3(0.0, 0.0, 0.0);
+// }
 #endif
