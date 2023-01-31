@@ -30,7 +30,7 @@ The latest demo (red dots are the frontiers of the un-explored space, write for 
 
 <img src="others/mapping_new.gif" width="800">
 
-The odds map and the odds-gradient of those occupied cell (odds > 0.8), represented by the white lines:
+The odds map (red for low odds and blue for high odds) and the odds-gradient of those occupied cell (odds > 0.8), represented by the white lines:
 
 <img src="others/oddsgrad.gif" width="800">
 
