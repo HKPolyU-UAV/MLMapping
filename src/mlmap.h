@@ -117,12 +117,13 @@ public:
 
     void setFree_map_in_bound(Vec3 box_min, Vec3 box_max);
 
-    inline int getOccupancy(Vec3 pos_w);
+    inline int getOccupancy(const Vec3 &pos_w);
+    inline int getOccupancy(const Vec3 &pos_w, float inflate);
 
-    inline float getOdd(Vec3 pos_w);
-    inline float getOdd(Vec3I &glb_id, size_t subbox_id);
+    inline float getOdd(const Vec3 &pos_w);
+    inline float getOdd(const Vec3I &glb_id, size_t subbox_id);
 
-    inline Vec3 getOddGrad(Vec3 pos_w, size_t max_iter);
+    inline Vec3 getOddGrad(const Vec3 &pos_w, const size_t max_iter);
     // inline Vec3 getOddGrad(Vec3I glb_id, size_t subbox_id, size_t max_iter);
     void visualize_map();
 
@@ -133,7 +134,19 @@ public:
     Vec3 getcolor_gray(double ratio);
 };
 
-inline int mlmap::getOccupancy(Vec3 pos_w)
+inline int mlmap::getOccupancy(const Vec3 &pos_w, float inflate)
+{
+    if (getOccupancy(pos_w + Vec3(0,0,inflate)) == FREE && 
+        getOccupancy(pos_w + Vec3(0,0,-inflate)) == FREE &&
+        getOccupancy(pos_w + Vec3(0,inflate,0)) == FREE &&
+        getOccupancy(pos_w + Vec3(0,-inflate,0)) == FREE &&
+        getOccupancy(pos_w + Vec3(inflate,0,0)) == FREE &&
+        getOccupancy(pos_w + Vec3(-inflate,0,0)) == FREE)
+    return FREE;
+    else
+    return OCCUPIED;
+}
+inline int mlmap::getOccupancy(const Vec3 &pos_w)
 {
     Vec3I glb_id;
     size_t subbox_id;
@@ -158,7 +171,7 @@ inline int mlmap::getOccupancy(Vec3 pos_w)
         return UNKNOWN;
 }
 
-inline float mlmap::getOdd(Vec3 pos_w) // return true odd
+inline float mlmap::getOdd(const Vec3 &pos_w) // return true odd
 {
 
     Vec3I glb_id;
@@ -172,7 +185,7 @@ inline float mlmap::getOdd(Vec3 pos_w) // return true odd
         return logit_inv(local_map->observed_group_map[glb_id].log_odds[subbox_id]);
 }
 
-inline float mlmap::getOdd(Vec3I &glb_id, size_t subbox_id)
+inline float mlmap::getOdd(const Vec3I &glb_id, size_t subbox_id)
 {
     if (local_map->observed_group_map.find(glb_id) == local_map->observed_group_map.end())
         return 0.5;
@@ -182,7 +195,7 @@ inline float mlmap::getOdd(Vec3I &glb_id, size_t subbox_id)
         return logit_inv(local_map->observed_group_map[glb_id].log_odds[subbox_id]);
 }
 
-inline Vec3 mlmap::getOddGrad(Vec3 pos_w, size_t max_iter = 5)
+inline Vec3 mlmap::getOddGrad(const Vec3 &pos_w, size_t max_iter = 5)
 {
     Vec3I glb_id;
     size_t subbox_id;

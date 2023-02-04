@@ -132,11 +132,11 @@ public:
     inline Vec3I global_xyzidx(size_t local_idx, Vec3 &pt_w);
     inline bool inside_exp_bd(Vec3 pt_w);
     void update_observation(Vec3I glb_idx, size_t subbox_id, Vec3 pt_w);
-    inline size_t get_subbox_id(Vec3 pt_w);
-    inline size_t get_subbox_id(Vec3 &pt_w, Vec3I &glb_idx);
-    inline PointP subbox_id2xyz_glb(Vec3I origin, int idx);
-    inline Vec3 subbox_id2xyz_glb_vec(Vec3I origin, int idx);
-    inline void get_global_idx(Vec3 pt_w, Vec3I &glb_idx, size_t &subbox_id);
+    // inline size_t get_subbox_id(Vec3 &pt_w);
+    inline size_t get_subbox_id(const Vec3 &pt_w, const Vec3I &glb_idx);
+    inline PointP subbox_id2xyz_glb(const Vec3I &origin, int idx);
+    inline Vec3 subbox_id2xyz_glb_vec(const Vec3I &origin, int idx);
+    inline void get_global_idx(const Vec3 &pt_w, Vec3I &glb_idx, size_t &subbox_id);
     inline bool allocate_ram(Vec3I &glb_idx);
 };
 inline size_t local_map_cartesian::mapIdx(Vec3I xyz_idx)
@@ -156,7 +156,7 @@ inline Vec3I local_map_cartesian::global_xyzidx(size_t local_idx, Vec3 &pt_w)
     return Vec3I(floor(pt_w[0] / map_dxyz_obv_glb), floor(pt_w[1] / map_dxyz_obv_glb), floor(pt_w[2] / map_dxyz_obv_glb));
 }
 
-inline void local_map_cartesian::get_global_idx(Vec3 pt_w, Vec3I &glb_idx, size_t &subbox_id)
+inline void local_map_cartesian::get_global_idx(const Vec3 &pt_w, Vec3I &glb_idx, size_t &subbox_id)
 {
     glb_idx = Vec3I(floor(pt_w[0] / map_dxyz_obv_glb), floor(pt_w[1] / map_dxyz_obv_glb), floor(pt_w[2] / map_dxyz_obv_glb));
     subbox_id = get_subbox_id(pt_w, glb_idx);
@@ -175,7 +175,7 @@ inline bool local_map_cartesian::inside_exp_bd(Vec3 pt_w)
             pt_w[2] >= global_bd[4] && pt_w[2] < global_bd[5]);
 }
 
-inline size_t local_map_cartesian::get_subbox_id(Vec3 &pt_w, Vec3I &glb_idx)
+inline size_t local_map_cartesian::get_subbox_id(const Vec3 &pt_w, const Vec3I &glb_idx)
 {
 
     return subbox_cell_id_table[Vec3I(floor(pt_w[0] / map_dxyz_obv_sub) - glb_idx[0] * subbox_nxyz,
@@ -183,12 +183,12 @@ inline size_t local_map_cartesian::get_subbox_id(Vec3 &pt_w, Vec3I &glb_idx)
                                       floor(pt_w[2] / map_dxyz_obv_sub) - glb_idx[2] * subbox_nxyz)];
 }
 
-inline size_t local_map_cartesian::get_subbox_id(Vec3 pt_w)
-{
-    return subbox_cell_id_table[Vec3I(static_cast<int>(fmod(pt_w[0], map_dxyz_obv_glb) / map_dxyz_obv_sub),
-                                      static_cast<int>(fmod(pt_w[1], map_dxyz_obv_glb) / map_dxyz_obv_sub),
-                                      static_cast<int>(fmod(pt_w[2], map_dxyz_obv_glb) / map_dxyz_obv_sub))];
-}
+// inline size_t local_map_cartesian::get_subbox_id(Vec3 &pt_w)
+// {
+//     return subbox_cell_id_table[Vec3I(static_cast<int>(fmod(pt_w[0], map_dxyz_obv_glb) / map_dxyz_obv_sub),
+//                                       static_cast<int>(fmod(pt_w[1], map_dxyz_obv_glb) / map_dxyz_obv_sub),
+//                                       static_cast<int>(fmod(pt_w[2], map_dxyz_obv_glb) / map_dxyz_obv_sub))];
+// }
 
 inline bool local_map_cartesian::xyz2xyzIdxwithBoderCheck(Vec3 xyz_w, Vec3I &xyz_idx)
 {
@@ -209,14 +209,14 @@ inline bool local_map_cartesian::xyz2xyzIdxwithBoderCheck(Vec3 xyz_w, Vec3I &xyz
     return false;
 }
 
-inline PointP local_map_cartesian::subbox_id2xyz_glb(Vec3I origin, int idx)
+inline PointP local_map_cartesian::subbox_id2xyz_glb(const Vec3I &origin, int idx)
 {
     return PointP(origin[0] * map_dxyz_obv_glb + subbox_id2xyz_table[idx][0] * map_dxyz_obv_sub + map_dxyz_obv_sub_half,
                   origin[1] * map_dxyz_obv_glb + subbox_id2xyz_table[idx][1] * map_dxyz_obv_sub + map_dxyz_obv_sub_half,
                   origin[2] * map_dxyz_obv_glb + subbox_id2xyz_table[idx][2] * map_dxyz_obv_sub + map_dxyz_obv_sub_half);
 }
 
-inline Vec3 local_map_cartesian::subbox_id2xyz_glb_vec(Vec3I origin, int idx)
+inline Vec3 local_map_cartesian::subbox_id2xyz_glb_vec(const Vec3I &origin, int idx)
 {
     return Vec3(origin[0] * map_dxyz_obv_glb + subbox_id2xyz_table[idx][0] * map_dxyz_obv_sub + map_dxyz_obv_sub_half,
                   origin[1] * map_dxyz_obv_glb + subbox_id2xyz_table[idx][1] * map_dxyz_obv_sub + map_dxyz_obv_sub_half,
