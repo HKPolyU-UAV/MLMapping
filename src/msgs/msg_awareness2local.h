@@ -2,7 +2,7 @@
 #define msg_awareness2local_H
 
 #include <mlmapping/awareness2local.h>
-#include <utils/include/all_utils.h>
+#include <all_utils.h>
 #include <ros/ros.h>
 #include <ros/publisher.h>
 #include <map_awareness.h>

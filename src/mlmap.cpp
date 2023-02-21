@@ -15,6 +15,7 @@ void mlmap::init_map(ros::NodeHandle &node_handle)
     cy_ = getDoubleVariableFromYaml(configFilePath, "mlmapping_cam_cy");
     fx_ = getDoubleVariableFromYaml(configFilePath, "mlmapping_cam_fx");
     fy_ = getDoubleVariableFromYaml(configFilePath, "mlmapping_cam_fy");
+    if_visualize_odds = getBoolVariableFromYaml(configFilePath, "visualize_odds");
     awareness_map = new awareness_map_cylindrical();
 
     Mat4x4 T_bs_mat = Mat44FromYaml(configFilePath, "T_B_S");
@@ -27,7 +28,8 @@ void mlmap::init_map(ros::NodeHandle &node_handle)
                             getIntVariableFromYaml(configFilePath, "mlmapping_am_n_Rho"),
                             getIntVariableFromYaml(configFilePath, "mlmapping_am_n_Z_below"),
                             getIntVariableFromYaml(configFilePath, "mlmapping_am_n_Z_over"),
-                            getBoolVariableFromYaml(configFilePath, "mlmapping_use_raycasting"));
+                            getBoolVariableFromYaml(configFilePath, "mlmapping_use_raycasting"),
+                            getDoubleVariableFromYaml(configFilePath, "mlmapping_depth_noise_coe"));
 
     // init transform
     // transformStamped_T_wb
@@ -57,8 +59,8 @@ void mlmap::init_map(ros::NodeHandle &node_handle)
     transformStamped_T_bs.transform.rotation.w = T_bs.so3().unit_quaternion().w();
 
     // init publisher
-    awarenessmap_pub = new msg_awareness(nh, "/mlmapping_awareness");
-    a2w_pub = new msg_awareness2local(nh, "/awareness2local", 2);
+    // awarenessmap_pub = new msg_awareness(nh, "/mlmapping_awareness");
+    // a2w_pub = new msg_awareness2local(nh, "/awareness2local", 2);
     // bool use_exactsync = getBoolVariableFromYaml(configFilePath, "use_exactsync");
     // bool use_odom = getBoolVariableFromYaml(configFilePath, "use_odom");
 
@@ -138,7 +140,7 @@ void mlmap::init_map(ros::NodeHandle &node_handle)
 
     OdomapproxSync_ = new message_filters::Synchronizer<ApproxSyncPolicyOdom>(ApproxSyncPolicyOdom(100), depth_sub, odom_sub, imu_sub);
     OdomapproxSync_->registerCallback(boost::bind(&mlmap::depth_odom_input_callback, this, _1, _2, _3));
-    this->timer1_ = nh.createTimer(ros::Duration(0.1), std::bind(&mlmap::timerCb1, this));
+    this->timer1_ = nh.createTimer(ros::Duration(0.1), std::bind(&mlmap::timerCb, this));
     cout << "ApproxSyncPolicy message filter settled!" << endl;
 }
 
@@ -298,7 +300,10 @@ void mlmap::project_depth()
         // filter depth
         // depth += rand_noise_(eng_);
         // if (depth > 0.01) depth += rand_noise2_(eng_);
-
+        // if (depth > 7)
+        // {
+        //     cout<<"depth > 7: "<<depth<<" u v: "<<u<<" "<<v<<endl;
+        // }
         if (*row_ptr == 0)
         {
             continue;
@@ -428,6 +433,8 @@ void mlmap::depth_odom_input_callback(const sensor_msgs::Image::ConstPtr &img_Pt
                                       const nav_msgs::Odometry::ConstPtr &pose_Ptr,
                                       const sensor_msgs::Imu::ConstPtr &imu_Ptr)
 {
+    // cout<<"mlmap got data!"<<endl;
+    has_data = true;
     pc_eigen.clear();
     double ros_time_gap_odom = (img_Ptr->header.stamp - pose_Ptr->header.stamp).toSec();
     double ros_time_gap_imu = (img_Ptr->header.stamp - imu_Ptr->header.stamp).toSec();
@@ -466,21 +473,24 @@ void mlmap::depth_odom_input_callback(const sensor_msgs::Image::ConstPtr &img_Pt
     project_depth();
     // auto t11 = std::chrono::system_clock::now();
 
-    update_map();
+    update_map(); 
+    map_updated = true;
 
     // main map update procedure is completed
     auto t2 = std::chrono::system_clock::now();
     visualize_map();
-
+    if (local_map->apply_explored_area)
     visualize_frontier();
+    if (if_visualize_odds)
     visualize_odds(0.9);
     // odds_publisher->pub_odd_slice(local_map, stamp, std::bind(&mlmap::getOddGrad, this, _1, 5));
-    timerCb();
+    // timerCb();
 
     std::chrono::duration<double> diff = t2 - t1;
     // std::chrono::duration<double> diff = t11 - t10;
     time_total += diff.count() * 1000;
-    printf("map single time: %.8f ms, ave-time cost: %.8f ms\n", diff.count() * 1000, time_total / (++count));
+    if (count % 10 ==0)
+    printf("[mlmapping] map single time: %.4f ms, ave-time cost: %.4f ms\n", diff.count() * 1000, time_total / (++count));
 
     //        sum_t+=tt.dT_ms();
     //        count++;

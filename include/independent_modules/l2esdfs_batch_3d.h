@@ -3,7 +3,7 @@
 
 #include <nav_msgs/OccupancyGrid.h>
 #include <map_local.h>
-#include <utils/include/all_utils.h>
+#include <all_utils.h>
 #include <ros/ros.h>
 #include <ros/publisher.h>
 #include <visualization_msgs/MarkerArray.h>

@@ -169,6 +169,7 @@ void local_map_cartesian::input_pc_pose_direct(awareness_map_cylindrical *a_map)
             if (observed_group_map[glb_idx].log_odds[subbox_id] > log_odds_occupied_sh && observed_group_map[glb_idx].occupancy[subbox_id] != 'o')
             {
                 observed_group_map[glb_idx].occupancy[subbox_id] = 'o';
+                if (apply_explored_area)
                 observed_group_map[glb_idx].frontier.erase(subbox_id);
                 obs_cnt++;
                 // occupied_cell_idx_map.emplace(map->at(map_idx).idx);
@@ -192,6 +193,7 @@ void local_map_cartesian::input_pc_pose_direct(awareness_map_cylindrical *a_map)
             if (observed_group_map[glb_idx].log_odds[subbox_id] >= log_odds_min)
             {
                 observed_group_map[glb_idx].log_odds[subbox_id] += log_odds_miss; // log_odds_miss is negative, so add it
+                observed_group_map[glb_idx].log_odds[subbox_id] = observed_group_map[glb_idx].log_odds[subbox_id] < log_odds_min ? log_odds_min : observed_group_map[glb_idx].log_odds[subbox_id];
                 // observed_group_map[glb_idx].log_odds[subbox_id] = log_odds_min;
             }
             // set free
@@ -200,6 +202,7 @@ void local_map_cartesian::input_pc_pose_direct(awareness_map_cylindrical *a_map)
                 if (observed_group_map[glb_idx].occupancy[subbox_id] == 'u' && apply_explored_area)
                     update_observation(glb_idx, subbox_id, p_w);
                 observed_group_map[glb_idx].occupancy[subbox_id] = 'f';
+                if (apply_explored_area)
                 observed_group_map[glb_idx].frontier.erase(subbox_id);
                 // occupied_cell_idx_map.erase(map->at(map_idx).idx);
             }
@@ -230,7 +233,7 @@ void local_map_cartesian::input_pc_pose_direct(awareness_map_cylindrical *a_map)
         }
     }
     observed_subboxes.clear();
-    cout << "memory expand times: " << ram_expand_cnt << " obs number: " << obs_cnt << endl;
+    // cout << "memory expand times: " << ram_expand_cnt << " obs number: " << obs_cnt << endl;
     // cout << "frontier size: " << frontier_cell_global_idx_map.size() << " observed size: " << observed_cell_global_idx_map.size() << endl;
     // cout << occupied_cell_idx_map.size()<<endl;
     // cout << PC_miss_a.size()<<endl;

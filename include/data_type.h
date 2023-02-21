@@ -1,7 +1,7 @@
-#ifndef DATA_TYPE_H
-#define DATA_TYPE_H
+#ifndef MLMAPPING_DATA_TYPE_H
+#define MLMAPPING_DATA_TYPE_H
 
-#include <utils/include/all_utils.h>
+#include "all_utils.h"
 
 struct CYLINDRICAL_CELL{
   unsigned int idx;

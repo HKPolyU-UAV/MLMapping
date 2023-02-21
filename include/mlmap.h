@@ -16,17 +16,17 @@
 #include <nav_msgs/Odometry.h>
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2_ros/transform_broadcaster.h>
-#include <utils/include/all_utils.h>
+#include <all_utils.h>
 #include <pcl_conversions/pcl_conversions.h>
 #include <rviz_vis.h>
-#include <msg_awareness2local.h>
-#include <msg_awareness.h>
+// #include <msg_awareness2local.h>
+// #include <msg_awareness.h>
 #include <cv_bridge/cv_bridge.h>
 
 #include <geometry_msgs/TransformStamped.h>
 
 #include <pcl/filters/voxel_grid.h>
-#include <msg_localmap.h>
+// #include <msg_localmap.h>
 
 #include <visualization_msgs/Marker.h>
 #include <visualization_msgs/MarkerArray.h>
@@ -51,8 +51,8 @@ private:
     typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, nav_msgs::Odometry, sensor_msgs::Imu> ApproxSyncPolicyOdom;
     message_filters::Synchronizer<ApproxSyncPolicyOdom> *OdomapproxSync_;
     // publisher
-    msg_awareness2local *a2w_pub;
-    msg_awareness *awarenessmap_pub;
+    // msg_awareness2local *a2w_pub;
+    // msg_awareness *awarenessmap_pub;
     tf2_ros::TransformBroadcaster br;
     // Timer
     ros::Timer timer_, timer1_;
@@ -64,6 +64,7 @@ private:
     size_t pc_sample_cnt;
     bool publish_T_wb;
     bool publish_T_bs;
+    bool if_visualize_odds;
     geometry_msgs::TransformStamped transformStamped_T_wb;
     geometry_msgs::TransformStamped transformStamped_T_wa;
     geometry_msgs::TransformStamped transformStamped_T_bs;
@@ -109,7 +110,8 @@ public:
         OCCUPIED = 0,
         UNKNOWN = -1
     };
-
+    bool has_data = false;
+    bool map_updated = false;
     void init_map(ros::NodeHandle &node_handle);
 
     void project_depth();
@@ -136,12 +138,28 @@ public:
 
 inline int mlmap::getOccupancy(const Vec3 &pos_w, float inflate)
 {
-    if (getOccupancy(pos_w + Vec3(0,0,inflate)) == FREE && 
-        getOccupancy(pos_w + Vec3(0,0,-inflate)) == FREE &&
-        getOccupancy(pos_w + Vec3(0,inflate,0)) == FREE &&
-        getOccupancy(pos_w + Vec3(0,-inflate,0)) == FREE &&
-        getOccupancy(pos_w + Vec3(inflate,0,0)) == FREE &&
-        getOccupancy(pos_w + Vec3(-inflate,0,0)) == FREE)
+    if (getOccupancy(pos_w) != OCCUPIED &&
+        getOccupancy(pos_w + Vec3(0,0,inflate)) != OCCUPIED && 
+        getOccupancy(pos_w + Vec3(0,0,-inflate)) != OCCUPIED &&
+        getOccupancy(pos_w + Vec3(0,inflate,0)) != OCCUPIED &&
+        getOccupancy(pos_w + Vec3(0,-inflate,0)) != OCCUPIED &&
+        getOccupancy(pos_w + Vec3(inflate,0,0)) != OCCUPIED &&
+        getOccupancy(pos_w + Vec3(-inflate,0,0)) != OCCUPIED &&  //x y z axis
+
+        getOccupancy(pos_w + Vec3(-inflate,inflate,0)) != OCCUPIED &&
+        getOccupancy(pos_w + Vec3(-inflate,-inflate,0)) != OCCUPIED &&
+        getOccupancy(pos_w + Vec3(inflate,inflate,0)) != OCCUPIED &&
+        getOccupancy(pos_w + Vec3(inflate,-inflate,0)) != OCCUPIED &&  //xy plane
+        
+        getOccupancy(pos_w + Vec3(0, -inflate,inflate)) != OCCUPIED &&
+        getOccupancy(pos_w + Vec3(0, -inflate,-inflate)) != OCCUPIED &&
+        getOccupancy(pos_w + Vec3(0, inflate,inflate)) != OCCUPIED &&
+        getOccupancy(pos_w + Vec3(0, inflate,-inflate)) != OCCUPIED && //yz plane
+        
+        getOccupancy(pos_w + Vec3(-inflate,0,inflate)) != OCCUPIED &&
+        getOccupancy(pos_w + Vec3(-inflate,0,-inflate)) != OCCUPIED &&
+        getOccupancy(pos_w + Vec3(inflate,0,inflate)) != OCCUPIED &&
+        getOccupancy(pos_w + Vec3(inflate,0,-inflate)) != OCCUPIED) //xz plane
     return FREE;
     else
     return OCCUPIED;

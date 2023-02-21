@@ -16,8 +16,9 @@ void awareness_map_cylindrical::setTbs(SE3 T_bs_in)
     this->T_bs = T_bs_in;
 }
 
-void awareness_map_cylindrical::init_map(double d_Rho, double d_Phi_deg, double d_Z, int n_Rho, int n_z_below, int n_z_over, bool apply_raycasting)
+void awareness_map_cylindrical::init_map(double d_Rho, double d_Phi_deg, double d_Z, int n_Rho, int n_z_below, int n_z_over, bool apply_raycasting, double noise_coe)
 {
+    this->noise_coe_ = noise_coe;
     this->map_dRho = d_Rho;
     this->map_dPhi = d_Phi_deg * M_PI / 180;
     this->map_dZ = d_Z;
@@ -144,7 +145,8 @@ void awareness_map_cylindrical::update_hits(Vec3 p_l, Vec3I rpz_idx, size_t map_
     // l2g_msg_hit_odds_l.emplace_back(get_odds_table[0+diff_range][rpz_idx[0]]);
     update_odds_hashmap(rpz_idx, get_odds_table[0 + diff_range][rpz_idx[0]]);
     // cout<<"added odds: "<<l2g_msg_hit_odds_l.back()<<endl;
-    for (auto diff_r = 1; diff_r < 3 * sigma_in_dr(rpz_idx[0]) && (rpz_idx[0] + diff_r < this->map_nRho); diff_r++)
+    // if (noise_coe_ > 0)
+    for (auto diff_r = 1;  diff_r < 3 * sigma_in_dr(rpz_idx[0]) && (rpz_idx[0] + diff_r < this->map_nRho); diff_r++)
     {
         raycasting_z = static_cast<int>(round(rpz_idx[2] + (diff_r * raycasting_rate)));
         odd = get_odds_table[diff_r + diff_range][rpz_idx[0]];
@@ -261,7 +263,7 @@ void awareness_map_cylindrical::input_pc_pose(vector<Vec3> PC_s, SE3 T_wb)
                 rpz_idx[2] = static_cast<int>(round(rpz_idx[2] - ((rpz_idx[0] - map_nRho + 1) * raycasting_rate)));
                 rpz_idx[0] = map_nRho - 1;
             }
-            for (int r = rpz_idx[0] - 4; r > 0; r--)
+            for (int r = rpz_idx[0] - 1; r > 0; r--)
             {
                 int diff_r = rpz_idx[0] - r;
                 int raycasting_z = static_cast<int>(round(rpz_idx[2] - (diff_r * raycasting_rate)));

@@ -1,26 +1,11 @@
 #ifndef local_map_cartesian_H
 #define local_map_cartesian_H
 
-#include <utils/include/all_utils.h>
-#include <data_type.h>
+// #include "all_utils.h"
+// #include "data_type.h"
 // #include <map_warehouse.h>
 #include "map_awareness.h"
 #define logit(x) (log10((x) / (1 - (x))))
-typedef struct SUBMAP_IN_LOCAL_PARA
-{
-    unsigned int submap_nxy;
-    unsigned int submap_nz;
-    Vec3 submap_diff_center_offset;
-    Vec3 diff_1st_close_submap_center_localmap_min;
-    double relevant_submap_search_range_xy;
-    double relevant_submap_search_range_z;
-} SUBMAP_IN_LOCAL_PARA;
-
-typedef struct SUBMAP_SWITCHING_CHECK_LIST
-{
-    unsigned int local_sub_map_idx;
-    SUBMAP_INFO submap_info;
-} SUBMAP_SWITCHING_CHECK_LIST;
 
 typedef struct LOCALMAP_VIS_PARA
 {
@@ -49,11 +34,9 @@ private:
     double map_min_x;
     double map_min_y;
     bool local_switch;
-    SUBMAP_IN_LOCAL_PARA submap_paras;
-    SUBMAP_SWITCHING_CHECK_LIST sub_map_switching_check_list[27]; // cloest 27 submaps
-    SUBMAP sub_maps[125];
+
     int global_min_idxx, global_min_idxy, global_min_idxz, global_max_idxx, global_max_idxy, global_max_idxz;
-    bool apply_explored_area;
+    
     vector<Vec3I> nbr_disp;
     vector<Vec3> nbr_disp_real;
     struct VectorHasher
@@ -76,6 +59,7 @@ private:
     };
 
 public:
+    bool apply_explored_area;
     float log_odds_max;
     float log_odds_min;
     SE3 T_wa_latest;

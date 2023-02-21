@@ -1,9 +1,9 @@
 #ifndef awareness_map_cylindrical_H
 #define awareness_map_cylindrical_H
 
-#include <utils/include/all_utils.h>
-#include <mlmapping/awareness2local.h>
-#include <data_type.h>
+// #include "all_utils.h"
+// #include <mlmapping/awareness2local.h>
+#include "data_type.h"
 #define deg2rad M_PI / 180
 class awareness_map_cylindrical
 {
@@ -16,6 +16,7 @@ private:
     int map_nRho;
     int map_nPhi;
     int map_center_z_idx;
+    double noise_coe_;
     SE3 last_T_wa;
     bool first_input;
     inline float sigma_in_dr(size_t x);
@@ -62,7 +63,7 @@ public:
     inline size_t mapIdx(Vec3I Rho_Phi_z);
     inline size_t mapIdx(int Rho, int Phi, int z);
     void setTbs(SE3 T_bs_in);
-    void init_map(double d_Rho, double d_Phi_deg, double d_Z, int n_Rho, int n_z_below, int n_z_over, bool apply_raycasting);
+    void init_map(double d_Rho, double d_Phi_deg, double d_Z, int n_Rho, int n_z_below, int n_z_over, bool apply_raycasting, double noise_coe);
     void clear_map();
     // Visit certain cell
     // size_t mapIdx_out(Vec3I Rho_Phi_z);
@@ -119,7 +120,7 @@ inline double awareness_map_cylindrical::fast_atan(double x)
 inline float awareness_map_cylindrical::sigma_in_dr(size_t x)
 {
     float dis = (x * this->map_dRho);
-    return 0.00375 * dis * dis / this->map_dRho; // for realsense d435i
+    return noise_coe_ * dis * dis / this->map_dRho; // for realsense d435i
 }
 
 inline float awareness_map_cylindrical::standard_ND(float x)
