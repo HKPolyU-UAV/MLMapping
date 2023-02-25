@@ -489,8 +489,11 @@ void mlmap::depth_odom_input_callback(const sensor_msgs::Image::ConstPtr &img_Pt
     std::chrono::duration<double> diff = t2 - t1;
     // std::chrono::duration<double> diff = t11 - t10;
     time_total += diff.count() * 1000;
+    count++;
+    // cout<<"count % 10: "<<count % 10<<" "<<count<<endl;
     if (count % 10 ==0)
-    printf("[mlmapping] map single time: %.4f ms, ave-time cost: %.4f ms\n", diff.count() * 1000, time_total / (++count));
+    printf("[mlmapping] map single time: %.4f ms, ave-time cost: %.4f ms\n", diff.count() * 1000, time_total / (count));
+
 
     //        sum_t+=tt.dT_ms();
     //        count++;

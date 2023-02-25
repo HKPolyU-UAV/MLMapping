@@ -6,7 +6,7 @@
 #Number of grid n_Rho*(360/d_Phi)*(nz_below+nz_over+1)
 
 mlmapping_am_d_Rho:         0.20
-mlmapping_am_d_Phi_deg:      10
+mlmapping_am_d_Phi_deg:      5
 mlmapping_am_d_Z:           0.20
 mlmapping_am_n_Rho:          40
 mlmapping_am_n_Z_below:      20
