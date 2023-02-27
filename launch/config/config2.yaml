@@ -30,6 +30,9 @@ mlmapping_depth_noise_coe: 0.00375
 
 camera2odom_latency: 0.085 # the latency (second) of the depth image minus the latency of the odom (imu). It can be estimated by the method in Dr. Han Chen's PHD thesis
 
+mlmapping_inflate_n:        2 # inflate size: mlmapping_subbox_d_xyz * mlmapping_inflate_n. It must smaller than mlmapping_subbox_n
+mlmapping_inflate_global_n: 2 # global inflate range: +-mlmapping_subbox_d_xyz * mlmapping_subbox_n * mlmapping_inflate_global_n
+mlmapping_apply_inflate:    true
 use_exploration_frontiers: true
 visualize_odds: false
 mlmapping_sample_cnt:       500

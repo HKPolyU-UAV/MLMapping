@@ -53,12 +53,16 @@ private:
     struct subbox
     {
         vector<char> occupancy;
+        vector<char> inflate_occupancy;
         vector<float> log_odds;
         unordered_set<int> frontier;
         // vector<Vec3>  odds_grad; //TODO
     };
 
 public:
+    int inflate_n = 3;
+    bool apply_inflate = false;
+    double flate_height = 0.1;
     bool apply_explored_area;
     float log_odds_max;
     float log_odds_min;
@@ -122,6 +126,7 @@ public:
     inline Vec3 subbox_id2xyz_glb_vec(const Vec3I &origin, int idx);
     inline void get_global_idx(const Vec3 &pt_w, Vec3I &glb_idx, size_t &subbox_id);
     inline bool allocate_ram(Vec3I &glb_idx);
+    inline void inflate_atpos(const Vec3I &glb_idx, size_t subbox_id);
 };
 inline size_t local_map_cartesian::mapIdx(Vec3I xyz_idx)
 {
@@ -212,6 +217,7 @@ inline bool local_map_cartesian::allocate_ram(Vec3I &glb_idx)
     if (observed_group_map.find(glb_idx) == observed_group_map.end()) // if current point belongs to a new group
     {
         observed_group_map[glb_idx].occupancy.resize(cell_num_subbox, 'u'); // u for unknown
+        observed_group_map[glb_idx].inflate_occupancy.resize(cell_num_subbox, 'u');
         observed_group_map[glb_idx].log_odds.resize(cell_num_subbox, 0);
         observed_group_map[glb_idx].frontier.clear();
         ram_expand_cnt++;
@@ -224,6 +230,38 @@ inline bool local_map_cartesian::allocate_ram(Vec3I &glb_idx)
     return true;
 }
 
+inline void local_map_cartesian::inflate_atpos(const Vec3I &glb_idx, size_t subbox_id)
+{
+    Vec3I subbox_id_offset;
+    // cout<<"begin inflate!"<<endl;
+    for (subbox_id_offset(0) = -inflate_n; subbox_id_offset(0) <= inflate_n; subbox_id_offset(0)++)
+        for (subbox_id_offset(1) = -inflate_n; subbox_id_offset(1) <= inflate_n; subbox_id_offset(1)++)
+            for (subbox_id_offset(2) = -inflate_n; subbox_id_offset(2) <= inflate_n; subbox_id_offset(2)++)
+            {
+                if (subbox_id_offset.lpNorm<1>() > inflate_n)
+                    continue;
+                Vec3I subbox_id_inflate = subbox_id_offset + subbox_id2xyz_table[subbox_id];
+                bool expanded = false;
+                Vec3I glb_idx_inflate = glb_idx;
+                for (auto m = 0; m < 3; m++)
+                {
+                    if (subbox_id_inflate[m] >= subbox_nxyz)
+                    {
+                        glb_idx_inflate[m] += 1;
+                        subbox_id_inflate[m] = subbox_id_inflate[m] - subbox_nxyz;
+                        expanded = true;
+                    }
+                    else if (subbox_id_inflate[m] < 0)
+                    {
+                        glb_idx_inflate[m] += -1;
+                        subbox_id_inflate[m] = subbox_nxyz + subbox_id_inflate[m];
+                        expanded = true;
+                    }
+                }
+                if ((expanded && allocate_ram(glb_idx_inflate)) || !expanded)
+                    observed_group_map[glb_idx_inflate].inflate_occupancy[subbox_cell_id_table[subbox_id_inflate]] = 'o';
+            }
+}
 // inline Vec3 local_map_cartesian::get_pos_world (Vec3I &glb_idx, size_t subbox_id)
 // {
 //  glb_idx

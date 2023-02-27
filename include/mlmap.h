@@ -55,7 +55,7 @@ private:
     // msg_awareness *awarenessmap_pub;
     tf2_ros::TransformBroadcaster br;
     // Timer
-    ros::Timer timer_, timer1_;
+    ros::Timer inflate_timer_, tf_timer_;
     int count = 0;
     double time_total = 0;
     double camera2odom_latency = 0;
@@ -92,10 +92,12 @@ private:
     float cx_, cy_, fx_, fy_;
     float odds_min, odds_max;
     string world_id;
+    int inflate_global_n = 2;
     vector<Vec3I> glb_idx_nb_list = vector<Vec3I>(6);
     vector<size_t> subbox_id_nb_list = vector<size_t>(6);
-    void timerCb();
-    void timerCb1();
+    Vec3 ct_pos;
+    void tf_timerCb();
+    void inflate_timerCb();
     void depth_odom_input_callback(const sensor_msgs::Image::ConstPtr &img_Ptr,
                                    const nav_msgs::Odometry::ConstPtr &pose_Ptr,
                                    const sensor_msgs::Imu::ConstPtr &imu_Ptr);
@@ -121,7 +123,7 @@ public:
 
     inline int getOccupancy(const Vec3 &pos_w);
     inline int getOccupancy(const Vec3 &pos_w, float inflate);
-
+    inline int getInflateOccupancy(const Vec3 &pos_w);
     inline float getOdd(const Vec3 &pos_w);
     inline float getOdd(const Vec3I &glb_id, size_t subbox_id);
 
@@ -134,35 +136,36 @@ public:
     void visualize_odds(float height);
     Vec3 getcolor(double ratio);
     Vec3 getcolor_gray(double ratio);
+    void inflate_map();
 };
 
 inline int mlmap::getOccupancy(const Vec3 &pos_w, float inflate)
 {
     if (getOccupancy(pos_w) != OCCUPIED &&
-        getOccupancy(pos_w + Vec3(0,0,inflate)) != OCCUPIED && 
-        getOccupancy(pos_w + Vec3(0,0,-inflate)) != OCCUPIED &&
-        getOccupancy(pos_w + Vec3(0,inflate,0)) != OCCUPIED &&
-        getOccupancy(pos_w + Vec3(0,-inflate,0)) != OCCUPIED &&
-        getOccupancy(pos_w + Vec3(inflate,0,0)) != OCCUPIED &&
-        getOccupancy(pos_w + Vec3(-inflate,0,0)) != OCCUPIED &&  //x y z axis
+        getOccupancy(pos_w + Vec3(0, 0, inflate)) != OCCUPIED &&
+        getOccupancy(pos_w + Vec3(0, 0, -inflate)) != OCCUPIED &&
+        getOccupancy(pos_w + Vec3(0, inflate, 0)) != OCCUPIED &&
+        getOccupancy(pos_w + Vec3(0, -inflate, 0)) != OCCUPIED &&
+        getOccupancy(pos_w + Vec3(inflate, 0, 0)) != OCCUPIED &&
+        getOccupancy(pos_w + Vec3(-inflate, 0, 0)) != OCCUPIED && // x y z axis
 
-        getOccupancy(pos_w + Vec3(-inflate,inflate,0)) != OCCUPIED &&
-        getOccupancy(pos_w + Vec3(-inflate,-inflate,0)) != OCCUPIED &&
-        getOccupancy(pos_w + Vec3(inflate,inflate,0)) != OCCUPIED &&
-        getOccupancy(pos_w + Vec3(inflate,-inflate,0)) != OCCUPIED &&  //xy plane
-        
-        getOccupancy(pos_w + Vec3(0, -inflate,inflate)) != OCCUPIED &&
-        getOccupancy(pos_w + Vec3(0, -inflate,-inflate)) != OCCUPIED &&
-        getOccupancy(pos_w + Vec3(0, inflate,inflate)) != OCCUPIED &&
-        getOccupancy(pos_w + Vec3(0, inflate,-inflate)) != OCCUPIED && //yz plane
-        
-        getOccupancy(pos_w + Vec3(-inflate,0,inflate)) != OCCUPIED &&
-        getOccupancy(pos_w + Vec3(-inflate,0,-inflate)) != OCCUPIED &&
-        getOccupancy(pos_w + Vec3(inflate,0,inflate)) != OCCUPIED &&
-        getOccupancy(pos_w + Vec3(inflate,0,-inflate)) != OCCUPIED) //xz plane
-    return FREE;
+        getOccupancy(pos_w + Vec3(-inflate, inflate, 0)) != OCCUPIED &&
+        getOccupancy(pos_w + Vec3(-inflate, -inflate, 0)) != OCCUPIED &&
+        getOccupancy(pos_w + Vec3(inflate, inflate, 0)) != OCCUPIED &&
+        getOccupancy(pos_w + Vec3(inflate, -inflate, 0)) != OCCUPIED && // xy plane
+
+        getOccupancy(pos_w + Vec3(0, -inflate, inflate)) != OCCUPIED &&
+        getOccupancy(pos_w + Vec3(0, -inflate, -inflate)) != OCCUPIED &&
+        getOccupancy(pos_w + Vec3(0, inflate, inflate)) != OCCUPIED &&
+        getOccupancy(pos_w + Vec3(0, inflate, -inflate)) != OCCUPIED && // yz plane
+
+        getOccupancy(pos_w + Vec3(-inflate, 0, inflate)) != OCCUPIED &&
+        getOccupancy(pos_w + Vec3(-inflate, 0, -inflate)) != OCCUPIED &&
+        getOccupancy(pos_w + Vec3(inflate, 0, inflate)) != OCCUPIED &&
+        getOccupancy(pos_w + Vec3(inflate, 0, -inflate)) != OCCUPIED) // xz plane
+        return FREE;
     else
-    return OCCUPIED;
+        return OCCUPIED;
 }
 inline int mlmap::getOccupancy(const Vec3 &pos_w)
 {
@@ -187,6 +190,24 @@ inline int mlmap::getOccupancy(const Vec3 &pos_w)
         return FREE;
     else
         return UNKNOWN;
+}
+
+inline int mlmap::getInflateOccupancy(const Vec3 &pos_w)
+{
+    Vec3I glb_id;
+    size_t subbox_id;
+    local_map->get_global_idx(pos_w, glb_id, subbox_id);
+    if (local_map->observed_group_map.find(glb_id) == local_map->observed_group_map.end())
+        return UNKNOWN;
+    else if (local_map->observed_group_map[glb_id].occupancy.size() == 1)
+        return UNKNOWN;
+    else
+    {
+    if (local_map->observed_group_map[glb_id].inflate_occupancy[subbox_id] == 'o')
+        return OCCUPIED;
+    else
+        return UNKNOWN;
+    }
 }
 
 inline float mlmap::getOdd(const Vec3 &pos_w) // return true odd
@@ -236,10 +257,10 @@ inline Vec3 mlmap::getOddGrad(const Vec3 &pos_w, size_t max_iter = 5)
             {
                 glb_idx_nb = glb_id + local_map->subbox_neighbors[subbox_id].block(i, 0, 1, 3).transpose(); // add the displacement of global idx
                 subbox_id_nb = local_map->subbox_neighbors[subbox_id](i, 3);
-                
-        // cout << "glb_id: " << glb_id.transpose() << " subbox_id: " <<subbox_id
-        //      << " glb_idx_nb: " << glb_idx_nb.transpose()<<" subbox_id_nb: " <<subbox_id_nb<<
-        //      " glb disp: "<<local_map->subbox_neighbors[subbox_id].block(i, 0, 1, 3)<< endl;   
+
+                // cout << "glb_id: " << glb_id.transpose() << " subbox_id: " <<subbox_id
+                //      << " glb_idx_nb: " << glb_idx_nb.transpose()<<" subbox_id_nb: " <<subbox_id_nb<<
+                //      " glb disp: "<<local_map->subbox_neighbors[subbox_id].block(i, 0, 1, 3)<< endl;
             }
             else
             {
@@ -261,16 +282,16 @@ inline Vec3 mlmap::getOddGrad(const Vec3 &pos_w, size_t max_iter = 5)
     if (flag)
     {
         // cout << "pos_w: " << pos_w.transpose() << " grad ori_dist: " << (local_map->subbox_id2xyz_glb_vec(glb_idx_nb_min, subbox_id_nb_min) - pos_w).transpose()
-            //  << " odd diff: " << (ori_odd - min_odd) << endl;
+        //  << " odd diff: " << (ori_odd - min_odd) << endl;
 
         return (local_map->subbox_id2xyz_glb_vec(glb_idx_nb_min, subbox_id_nb_min) - pos_w) * (ori_odd - min_odd);
     }
     else
-        {
-            // cout <<"iter: "<<iter<< " pos_w: " << pos_w.transpose() << " grad ori_dist: " << (local_map->subbox_id2xyz_glb_vec(glb_idx_nb_min, subbox_id_nb_min) - pos_w).transpose()
-            //  << " odd diff: " << (ori_odd - min_odd) << endl;
+    {
+        // cout <<"iter: "<<iter<< " pos_w: " << pos_w.transpose() << " grad ori_dist: " << (local_map->subbox_id2xyz_glb_vec(glb_idx_nb_min, subbox_id_nb_min) - pos_w).transpose()
+        //  << " odd diff: " << (ori_odd - min_odd) << endl;
         return Vec3(0.0, 0.0, 0.0);
-        }
+    }
 }
 
 // inline Vec3 mlmap::getOddGrad(Vec3I glb_id, size_t subbox_id, size_t max_iter = 5)

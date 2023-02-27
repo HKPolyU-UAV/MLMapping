@@ -6,7 +6,7 @@
 #Number of grid n_Rho*(360/d_Phi)*(nz_below+nz_over+1)
 
 mlmapping_am_d_Rho:         0.20
-mlmapping_am_d_Phi_deg:      3
+mlmapping_am_d_Phi_deg:       5
 mlmapping_am_d_Z:           0.20
 mlmapping_am_n_Rho:          40
 mlmapping_am_n_Z_below:      20
@@ -35,6 +35,10 @@ camera2odom_latency: 0.001 # for gazebo simulation
 use_exploration_frontiers: false
 visualize_odds: false
 mlmapping_sample_cnt:       500
+
+mlmapping_inflate_n:        2 # inflate size: mlmapping_subbox_d_xyz * mlmapping_inflate_n. It must smaller than mlmapping_subbox_n
+mlmapping_inflate_global_n: 2 # global inflate range: +-mlmapping_subbox_d_xyz * mlmapping_subbox_n * mlmapping_inflate_global_n
+mlmapping_apply_inflate:    true
 mlmapping_use_raycasting:   true
 mlmapping_enable_esdfs:     false
 mlmapping_enable_2d_grid:   false

@@ -7,6 +7,7 @@ void mlmap::init_map(ros::NodeHandle &node_handle)
     nh = node_handle;
     string configFilePath;
     nh.getParam("/mlmapping_configfile", configFilePath);
+    inflate_global_n = getIntVariableFromYaml(configFilePath, "mlmapping_inflate_global_n");
     cout << "config file path: " << configFilePath << endl;
     camera2odom_latency = getDoubleVariableFromYaml(configFilePath, "camera2odom_latency");
     // init map
@@ -80,6 +81,8 @@ void mlmap::init_map(ros::NodeHandle &node_handle)
                         static_cast<float>(getDoubleVariableFromYaml(configFilePath, "mlmapping_lm_occupied_sh")),
                         getBoolVariableFromYaml(configFilePath, "use_exploration_frontiers"));
     // local_map->allocate_memory_for_local_map();
+    local_map->inflate_n = getIntVariableFromYaml(configFilePath, "mlmapping_inflate_n");
+    local_map->apply_inflate = getBoolVariableFromYaml(configFilePath, "mlmapping_apply_inflate");
     cout << "local map initialize finish!" << endl;
     // cout << "frame id: " << getStringFromYaml(configFilePath, "world_frame_id") << endl;
     transformStamped_T_wl.header.frame_id = getStringFromYaml(configFilePath, "world_frame_id");
@@ -140,13 +143,15 @@ void mlmap::init_map(ros::NodeHandle &node_handle)
 
     OdomapproxSync_ = new message_filters::Synchronizer<ApproxSyncPolicyOdom>(ApproxSyncPolicyOdom(100), depth_sub, odom_sub, imu_sub);
     OdomapproxSync_->registerCallback(boost::bind(&mlmap::depth_odom_input_callback, this, _1, _2, _3));
-    this->timer1_ = nh.createTimer(ros::Duration(0.1), std::bind(&mlmap::timerCb, this));
+    this->tf_timer_ = nh.createTimer(ros::Duration(0.1), std::bind(&mlmap::tf_timerCb, this));
+    this->inflate_timer_ = nh.createTimer(ros::Duration(0.2), std::bind(&mlmap::inflate_timerCb, this));
     cout << "ApproxSyncPolicy message filter settled!" << endl;
 }
 
-void mlmap::timerCb1()
+void mlmap::inflate_timerCb()
 {
-    ROS_INFO("Callback 1 triggered");
+    ROS_INFO("Inflate triggered");
+    inflate_map();
 }
 
 Vec3 mlmap::getcolor(double ratio)
@@ -277,6 +282,32 @@ void mlmap::visualize_odds(float height = 0.7)
         this->odds_pub.publish(mks);
     }
 }
+
+void mlmap::inflate_map()
+{
+  Vec3I ct_glb; size_t subbox_id;
+  local_map->get_global_idx(ct_pos, ct_glb, subbox_id);
+    Vec3I subbox_id_offset;
+    // cout<<"begin inflate!"<<endl;
+    for (subbox_id_offset(0) = -inflate_global_n; subbox_id_offset(0) <= inflate_global_n; subbox_id_offset(0)++)
+        for (subbox_id_offset(1) = -inflate_global_n; subbox_id_offset(1) <= inflate_global_n; subbox_id_offset(1)++)
+            for (subbox_id_offset(2) = -inflate_global_n; subbox_id_offset(2) <= inflate_global_n; subbox_id_offset(2)++)
+            {
+                Vec3I temp_glb = subbox_id_offset + ct_glb;
+                
+                if (local_map->observed_group_map.find(temp_glb) != local_map->observed_group_map.end() && local_map->observed_group_map[temp_glb].occupancy.size() > 1)
+                {
+                  local_map->observed_group_map[temp_glb].inflate_occupancy.clear();
+                  local_map->observed_group_map[temp_glb].inflate_occupancy.resize(local_map->cell_num_subbox, 'u');
+                  for (auto it = 0; it < local_map->observed_group_map[temp_glb].occupancy.size(); it++)
+                  if (local_map->observed_group_map[temp_glb].occupancy[it] == 'o' && local_map->subbox_id2xyz_glb_vec(temp_glb, it)(2) > local_map->flate_height)
+                  { 
+                    local_map->inflate_atpos(temp_glb, it);
+                  }
+                }
+            }
+}
+
 void mlmap::project_depth()
 {
     uint16_t *row_ptr;
@@ -385,7 +416,7 @@ void mlmap::visualize_frontier()
     frontier_publisher->pub_frontier(local_map, stamp);
 }
 
-void mlmap::timerCb()
+void mlmap::tf_timerCb()
 {
     // cout << "publish tfs!" << endl;
     SE3 T_wl = local_map->T_wl;
@@ -451,7 +482,9 @@ void mlmap::depth_odom_input_callback(const sensor_msgs::Image::ConstPtr &img_Pt
         (cv_ptr->image).convertTo(cv_ptr->image, CV_16UC1, k_depth_scaling_factor_);
     }
     cv_ptr->image.copyTo(depth_image_);
-
+    ct_pos = Vec3(pose_Ptr->pose.pose.position.x,
+                    pose_Ptr->pose.pose.position.y,
+                    pose_Ptr->pose.pose.position.z);
     SO3 rot_og = SO3(Quaterniond(pose_Ptr->pose.pose.orientation.w,
                                  pose_Ptr->pose.pose.orientation.x,
                                  pose_Ptr->pose.pose.orientation.y,
@@ -459,9 +492,7 @@ void mlmap::depth_odom_input_callback(const sensor_msgs::Image::ConstPtr &img_Pt
     Vec3 rot_dot = rot_og.matrix() * Vec3(imu_Ptr->angular_velocity.x, imu_Ptr->angular_velocity.y, imu_Ptr->angular_velocity.z);
     Vec3 rot_cp = rot_og.log() + time_gap * rot_dot; // lie algebra
     T_wb = SE3(SO3::exp(rot_cp),                     // lie group
-               Vec3(pose_Ptr->pose.pose.position.x,
-                    pose_Ptr->pose.pose.position.y,
-                    pose_Ptr->pose.pose.position.z) +
+               ct_pos +
                    (ros_time_gap_odom - camera2odom_latency) * Vec3(pose_Ptr->twist.twist.linear.x,
                                                                     pose_Ptr->twist.twist.linear.y,
                                                                     pose_Ptr->twist.twist.linear.z));

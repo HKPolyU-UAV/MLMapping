@@ -17,7 +17,7 @@ void local_map_cartesian::update_observation(Vec3I glb_idx, size_t subbox_id, Ve
     for (auto i = 0; i < 6; i++)
     {
         Vec3 pt_w_nb = pt_w + nbr_disp_real[i];
-        glb_idx_nb = glb_idx + subbox_neighbors[subbox_id].block(i,0,1,3).transpose(); // add the displacement of global idx
+        glb_idx_nb = glb_idx + subbox_neighbors[subbox_id].block(i, 0, 1, 3).transpose(); // add the displacement of global idx
         subbox_id_nb = subbox_neighbors[subbox_id](i, 3);
         // cout<<"i: "<<i<<" frontier pos: "<<pt_w_nb.transpose()<<" glb_idx_nb: "<<glb_idx_nb.transpose()<<" subbox_id: "<<subbox_id_nb<<endl;
         if (inside_exp_bd(pt_w_nb) && allocate_ram(glb_idx_nb) &&
@@ -43,7 +43,6 @@ Vec3I local_map_cartesian::xyz2xyzIdx(Vec3 xyz_w)
     return Vec3I(x_idx, y_idx, z_idx);
 }
 
-
 void local_map_cartesian::init_map(double d_xyz_in,
                                    unsigned int subbox_n,
                                    float log_odds_min_in,
@@ -56,8 +55,8 @@ void local_map_cartesian::init_map(double d_xyz_in,
     // map_dxyz = d_xyz_in;
     map_dxyz_obv_sub = d_xyz_in;
     map_dxyz_obv_sub_half = map_dxyz_obv_sub * 0.5;
-    map_reso_inv = 1/map_dxyz_obv_sub;
-    subbox_nxyz = subbox_n;                                  // subbox size
+    map_reso_inv = 1 / map_dxyz_obv_sub;
+    subbox_nxyz = subbox_n;                            // subbox size
     map_dxyz_obv_glb = map_dxyz_obv_sub * subbox_nxyz; // temporary
     // const int subbox_nxyz = static_cast<int>(map_dxyz_obv_glb / map_dxyz);
     cell_num_subbox = pow(subbox_nxyz, 3);
@@ -74,7 +73,6 @@ void local_map_cartesian::init_map(double d_xyz_in,
             }
         }
     }
-
 
     Vec3I temp_id;
     nbr_disp.emplace_back(Vec3I(0, 0, 1));
@@ -124,15 +122,12 @@ void local_map_cartesian::init_map(double d_xyz_in,
     apply_explored_area = if_apply_explor;
 
     global_bd = {-30, 30, -30, 30, 0, 5};
-    
 
     log_odds_min = log_odds_min_in;
     log_odds_max = log_odds_max_in;
     log_odds_hit = log_odds_hit_in;
     log_odds_miss = log_odds_miss_in;
     log_odds_occupied_sh = log_odds_occupied_sh_in;
-
-
 
     vis_paras.map_maxz = (0.5 * map_dxyz) + floor(map_nz / 2.0) * map_dxyz;
     vis_paras.map_minz = -(0.5 * map_dxyz) - floor(map_nz / 2.0) * map_dxyz;
@@ -158,7 +153,7 @@ void local_map_cartesian::input_pc_pose_direct(awareness_map_cylindrical *a_map)
         // size_t map_idx = mapIdx(xyz_idx);
         if (allocate_ram(glb_idx))
         {
-            
+
             if (observed_group_map[glb_idx].log_odds[subbox_id] < log_odds_max)
             {
                 observed_group_map[glb_idx].log_odds[subbox_id] += logit(pair_.second);
@@ -170,7 +165,7 @@ void local_map_cartesian::input_pc_pose_direct(awareness_map_cylindrical *a_map)
             {
                 observed_group_map[glb_idx].occupancy[subbox_id] = 'o';
                 if (apply_explored_area)
-                observed_group_map[glb_idx].frontier.erase(subbox_id);
+                    observed_group_map[glb_idx].frontier.erase(subbox_id);
                 obs_cnt++;
                 // occupied_cell_idx_map.emplace(map->at(map_idx).idx);
             }
@@ -189,7 +184,7 @@ void local_map_cartesian::input_pc_pose_direct(awareness_map_cylindrical *a_map)
         // map->at(map_idx).observed = true;
         if (allocate_ram(glb_idx))
         {
-            
+
             if (observed_group_map[glb_idx].log_odds[subbox_id] >= log_odds_min)
             {
                 observed_group_map[glb_idx].log_odds[subbox_id] += log_odds_miss; // log_odds_miss is negative, so add it
@@ -203,7 +198,7 @@ void local_map_cartesian::input_pc_pose_direct(awareness_map_cylindrical *a_map)
                     update_observation(glb_idx, subbox_id, p_w);
                 observed_group_map[glb_idx].occupancy[subbox_id] = 'f';
                 if (apply_explored_area)
-                observed_group_map[glb_idx].frontier.erase(subbox_id);
+                    observed_group_map[glb_idx].frontier.erase(subbox_id);
                 // occupied_cell_idx_map.erase(map->at(map_idx).idx);
             }
         }
@@ -225,6 +220,8 @@ void local_map_cartesian::input_pc_pose_direct(awareness_map_cylindrical *a_map)
                 // auto same_elem = observed_group_map[glb_idx][0];
                 observed_group_map[glb_idx].occupancy.resize(1);
                 observed_group_map[glb_idx].occupancy.shrink_to_fit();
+                observed_group_map[glb_idx].inflate_occupancy.resize(1);
+                observed_group_map[glb_idx].inflate_occupancy.shrink_to_fit();
                 observed_group_map[glb_idx].log_odds.resize(1);
                 observed_group_map[glb_idx].log_odds.shrink_to_fit();
                 // observed_group_map.erase(glb_idx);
