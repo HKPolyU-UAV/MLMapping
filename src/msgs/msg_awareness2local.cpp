@@ -10,30 +10,35 @@ msg_awareness2local::msg_awareness2local(ros::NodeHandle& nh, string topic_name,
     l2g_pub = nh.advertise<mlmapping::awareness2local>(topic_name,buffersize);
 }
 
-void msg_awareness2local::pub(const SE3 T_w_a, vector<Vec3> obs_pts, vector<Vec3> miss_pts, ros::Time stamp)
+void msg_awareness2local::pub_a2l(awareness_map_cylindrical *a_map, ros::Time stamp)
 {
     mlmapping::awareness2local a2l_msg;
     a2l_msg.header.stamp = stamp;
-    a2l_msg.pt_obs_count = obs_pts.size();
-    a2l_msg.pt_miss_count = miss_pts.size();
-    for(Vec3 pt:obs_pts)
+    a2l_msg.pt_obs_count = a_map->hit_idx_odds_hashmap.size();
+    a2l_msg.pt_miss_count = a_map->miss_idx_set.size();
+    cout<<"hit size: "<<a2l_msg.pt_obs_count<<"  miss size: "<<a2l_msg.pt_miss_count<<endl;
+    // int i = 0;
+    for(auto iter = a_map->hit_idx_odds_hashmap.begin(); iter != a_map->hit_idx_odds_hashmap.end(); iter++)
     {
         geometry_msgs::Vector3 geo_pt;
-        geo_pt.x = pt(0);
-        geo_pt.y = pt(1);
-        geo_pt.z = pt(2);
-        a2l_msg.pts_obs_a.push_back(geo_pt);
+        Vec3 geo_pt_vec = a_map->map->at(a_map->mapIdx(iter->first)).center_pt;
+        geo_pt.x = geo_pt_vec[0];
+        geo_pt.y = geo_pt_vec[1];
+        geo_pt.z = geo_pt_vec[2];
+        
+        a2l_msg.pts_obs_a.emplace_back(geo_pt);
+        a2l_msg.odds_obs_a.emplace_back(log10(iter->second));
     }
-    for(Vec3 pt:miss_pts)
+    for(size_t idx:a_map->miss_idx_set)
     {
         geometry_msgs::Vector3 geo_pt;
-        geo_pt.x = pt(0);
-        geo_pt.y = pt(1);
-        geo_pt.z = pt(2);
+        geo_pt.x = a_map->map->at(idx).center_pt[0];
+        geo_pt.y = a_map->map->at(idx).center_pt[1];
+        geo_pt.z = a_map->map->at(idx).center_pt[2];
         a2l_msg.pts_miss_a.push_back(geo_pt);
     }
-    Vec3 t=T_w_a.translation();
-    Quaterniond uq= T_w_a.unit_quaternion();
+    Vec3 t = a_map->T_wa.translation();
+    Quaterniond uq = a_map->T_wa.unit_quaternion();
     a2l_msg.T_w_a.rotation.w=uq.w();
     a2l_msg.T_w_a.rotation.x=uq.x();
     a2l_msg.T_w_a.rotation.y=uq.y();
@@ -47,6 +52,7 @@ void msg_awareness2local::pub(const SE3 T_w_a, vector<Vec3> obs_pts, vector<Vec3
 void msg_awareness2local::unpack(mlmapping::awareness2localConstPtr ptr,
                               SE3 &T_w_a,
                               vector<Vec3> &l2g_obs_l,
+                              vector<float> &l2g_odds_l,
                               vector<Vec3> &l2g_miss_l,
                               ros::Time &T)
 {
@@ -66,6 +72,7 @@ void msg_awareness2local::unpack(mlmapping::awareness2localConstPtr ptr,
     for(size_t i=0; i<num_obs; i++)
     {
         l2g_obs_l.push_back(Vec3(ptr->pts_obs_a.at(i).x,ptr->pts_obs_a.at(i).y,ptr->pts_obs_a.at(i).z));
+        l2g_odds_l.push_back(ptr->odds_obs_a.at(i));
     }
     for(size_t i=0; i<num_miss; i++)
     {

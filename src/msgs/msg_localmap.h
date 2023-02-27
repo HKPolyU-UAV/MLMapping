@@ -3,7 +3,7 @@
 
 #include <mlmapping/localmap.h>
 #include <map_local.h>
-#include <utils/include/all_utils.h>
+#include <all_utils.h>
 #include <ros/ros.h>
 #include <ros/publisher.h>
 

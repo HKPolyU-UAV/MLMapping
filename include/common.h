@@ -12,7 +12,8 @@
 #include <pcl/impl/point_types.hpp>
 #include "../3rdPartLib/Sophus/sophus/so3.h"
 #include "../3rdPartLib/Sophus/sophus/se3.h"
-
+#include <unordered_map>
+#include <unordered_set>
 using namespace std;
 using namespace Eigen;
 using namespace Sophus;
@@ -20,6 +21,8 @@ using namespace Sophus;
 typedef Eigen::Matrix<double, 2, 1> Vec2;
 typedef Eigen::Matrix<double, 3, 1> Vec3;
 typedef Eigen::Matrix<int, 3, 1>   Vec3I;
+typedef Eigen::Matrix<size_t, 6, 1>   Vec6I;
+typedef Eigen::Matrix<int, 6, 4> Mat6x4I;
 typedef Eigen::Matrix<double, 4, 1> Vec4;
 typedef Eigen::Matrix<double, 6, 1> Vec6;
 typedef Eigen::Matrix<double, 9, 1> Vec9;

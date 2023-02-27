@@ -25,6 +25,7 @@ find_package(catkin REQUIRED COMPONENTS
     nav_msgs
     visualization_msgs
     pcl_conversions
+    cv_bridge
     )
 
 add_message_files(
@@ -45,34 +46,41 @@ generate_messages(
     )
 
 ## Declare a catkin package
+# catkin_package(
+#     CATKIN_DEPENDS message_runtime
+#     )
 catkin_package(
-    CATKIN_DEPENDS message_runtime
+    INCLUDE_DIRS include
+    # INCLUDE_DIRS src
+    LIBRARIES mlmapping
+    CATKIN_DEPENDS roscpp std_msgs
     )
-
-include_directories(SYSTEM
+include_directories(
+    SYSTEM
+    include
     ${catkin_INCLUDE_DIRS}
     ${CSPARSE_INCLUDE_DIR}
     ${Sophus_INCLUDE_DIRS}
     ${YAML_CPP_INCLUDE_DIR}
     ${PCL_INCLUDE_DIRS}
-    "${CMAKE_CURRENT_SOURCE_DIR}/src/"
-    "${CMAKE_CURRENT_SOURCE_DIR}/src/utils/"
+    ${OpenCV_INCLUDE_DIRS}
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/
+    # ${CMAKE_CURRENT_SOURCE_DIR}/include/
     "${CMAKE_CURRENT_SOURCE_DIR}/src/msgs/"
     )
 
 ## Declare a C++ library
 add_library(mlmapping
-    src/nodelet_awareness.cpp
-    src/nodelet_local.cpp
+    src/nodelet_map.cpp
     src/map_awareness.cpp
     src/map_local.cpp
-    src/map_warehouse.cpp
+    src/mlmap.cpp
     src/rviz_vis.cpp
     src/msgs/msg_awareness2local.cpp
     src/msgs/msg_awareness.cpp
     src/msgs/msg_localmap.cpp
-    src/independent_modules/l2grid2d.cpp
-    src/independent_modules/l2esdfs_batch_3d.cpp
+    include/independent_modules/l2grid2d.cpp
+    include/independent_modules/l2esdfs_batch_3d.cpp
     )
 
 add_dependencies(mlmapping
@@ -88,28 +96,28 @@ target_link_libraries(mlmapping
     ${Boost_SYSTEM_LIBRARY}
     )
 
-add_executable(visualization
-    src/node_visualization.cpp
-    src/map_awareness.cpp
-    src/map_warehouse.cpp
-    src/map_local.cpp
-    src/rviz_vis.cpp
-    src/msgs/msg_awareness.cpp
-    src/msgs/msg_localmap.cpp
-    )
-add_dependencies(visualization
-    mlmapping_generate_messages_cpp
-    ${catkin_EXPORTED_TARGETS}
-    )
-target_link_libraries(visualization
-    ${catkin_LIBRARIES}
-    ${CSPARSE_LIBRARY}
-    ${Sophus_LIBRARIES}
-    ${YAML_CPP_LIBRARIES}
-    )
+# add_executable(visualization
+#     src/node_visualization.cpp
+#     src/map_awareness.cpp
+#     src/map_warehouse.cpp
+#     src/map_local.cpp
+#     src/rviz_vis.cpp
+#     src/msgs/msg_awareness.cpp
+#     src/msgs/msg_localmap.cpp
+#     )
+# add_dependencies(visualization
+#     mlmapping_generate_messages_cpp
+#     ${catkin_EXPORTED_TARGETS}
+#     )
+# target_link_libraries(visualization
+#     ${catkin_LIBRARIES}
+#     ${CSPARSE_LIBRARY}
+#     ${Sophus_LIBRARIES}
+#     ${YAML_CPP_LIBRARIES}
+#     )
 
 add_executable(republish_record
-    src/independent_modules/repub_rec.cpp
+    include/independent_modules/repub_rec.cpp
     )
 target_link_libraries(republish_record
     ${catkin_LIBRARIES}

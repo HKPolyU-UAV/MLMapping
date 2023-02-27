@@ -3,7 +3,7 @@
     <param name ="/use_sim_time" value="true"/>
     <!--sim_planner1-->
 <!--Input######################################################################################################-->
-    <node pkg="rosbag" type="play" name="rosbag" output="log" args="$(find mlmapping)/bag/flight_1.bag">
+    <node pkg="rosbag" type="play" name="rosbag" output="log" args="$(find mlmapping)/bag/large_scene_gazebo.bag">
     </node>
 
 <!--rviz#######################################################################################################-->
@@ -14,7 +14,7 @@
 
 <!--mlmapping##################################################################################################-->
     <arg name="node_start_delay"  default="1.0" />
-    <param name="/mlmapping_configfile" type="string" value="$(find mlmapping)/launch/config/config.yaml"/>
+    <param name="/mlmapping_configfile" type="string" value="$(find mlmapping)/launch/config/config_sim.yaml"/>
 
     <!-- Manager -->
     <node pkg="nodelet" type="nodelet"
@@ -22,20 +22,23 @@
           <param name="num_worker_threads" value="2" />
     </node>
 
-    <node pkg="nodelet" type="nodelet" args="load mlmapping/AwarenessMapNodeletClass mlmapping_nodelet_manager"
-        name="awareness_loader" output="screen"
+    <node pkg="nodelet" type="nodelet" args="load mlmapping/MlMapNodeletClass mlmapping_nodelet_manager"
+        name="Mlmap_loader" output="screen"
         launch-prefix="bash -c 'sleep 1; $0 $@' ">
-        <remap from="/mlmapping/pc"          to="/camera/depth/color/points"/>
+        
+        <!-- <remap from="/mlmapping/depth"       to="/camera/depth/image_rect_raw"/> -->
+        <remap from="/mlmapping/depth"       to="/camera/depth_aligned_to_color_and_infra1/image_raw"/>
+
+        <!-- <remap from="/mlmapping/pc"          to="/camera/depth/color/points"/> -->
         <!-- <remap from="/mlmapping/pc"          to="/filtered_RadiusOutlierRemoval"/> -->
-        <remap from="/mlmapping/pose"        to="/mavros/local_position/pose"/>
+        <!-- <remap from="/mlmapping/pose"        to="/mavros/local_position/pose"/> -->
         <!-- Odom or pose -->
-        <remap from="/mlmapping/odom"        to="/vicon_imu_ekf_odom"/>
+        <!-- <remap from="/mlmapping/odom"        to="/vicon_imu_ekf_odom"/> -->
+        <remap from="/mlmapping/odom"        to="/gt_iris_base_link_imu"/>
         <remap from="/mlmapping/imu"        to="/mavros/imu/data"/>
     </node>
 
-    <node pkg="nodelet" type="nodelet" args="load mlmapping/LocalMapNodeletClass mlmapping_nodelet_manager"
-        name="localmap_loader" output="screen">
-    </node>
+
 
 </launch>
 

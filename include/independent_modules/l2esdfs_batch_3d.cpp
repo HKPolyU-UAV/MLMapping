@@ -97,7 +97,7 @@ Vec3I Local2ESDFsBatch::esdf_cube_coler_int(double ratio)
 
 void Local2ESDFsBatch::pub_ESDF_3D_from_localmap(local_map_cartesian *map, ros::Time stamp)
 {
-  for (size_t i=0; i<batch_size_nz; i++)
+  for (auto i=0; i<batch_size_nz; i++)
   {
     esdf_map3d.at(i).fill(esdf_cutoff_value);
   }
@@ -185,7 +185,7 @@ void Local2ESDFsBatch::pub_ESDF_3D_from_localmap(local_map_cartesian *map, ros::
   for(int loop=0; loop<batch_max_search_range-1; loop++)
   {
     // go up
-    for(size_t layer=0; layer<batch_size_nz-1; layer++)
+    for(auto layer=0; layer<batch_size_nz-1; layer++)
     {
       MatrixXd update_matrix = esdf_map3d.at(layer)+increase_dz;
       MatrixXd residual_matrix = update_matrix-esdf_map3d.at(layer+1);

@@ -1,7 +1,7 @@
 #ifndef KINETIC_MATH
 #define KINETIC_MATH
 
-#include <include/common.h>
+#include "common.h"
 #include <eigen3/Eigen/Eigen>
 #include <eigen3/Eigen/Dense>
 #include <eigen3/Eigen/Geometry>

@@ -51,8 +51,9 @@ int main(int argc, char **argv)
                       static_cast<float>(getDoubleVariableFromYaml(configFilePath,"mlmapping_lm_log_odds_max")),
                       static_cast<float>(getDoubleVariableFromYaml(configFilePath,"mlmapping_lm_measurement_hit")),
                       static_cast<float>(getDoubleVariableFromYaml(configFilePath,"mlmapping_lm_measurement_miss")),
-                      static_cast<float>(getDoubleVariableFromYaml(configFilePath,"mlmapping_lm_occupied_sh")));
-  local_map->allocate_memory_for_local_map();
+                      static_cast<float>(getDoubleVariableFromYaml(configFilePath,"mlmapping_lm_occupied_sh")),
+                      getBoolVariableFromYaml(configFilePath,"use_exploration_frontiers"));
+  // local_map->allocate_memory_for_local_map();
   local_map_rviz_pub = new rviz_vis();
   local_map_rviz_pub->set_as_local_map_publisher(nh,"/local_map",
                                                   getStringFromYaml(configFilePath,"local_frame_id"),
