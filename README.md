@@ -53,7 +53,7 @@ alt="cla" width="480" height="300" border="1" /></a>
 Clone this repository to catkin src folder say: ~/catkin_ws/src
 ````
 cd ~/catkin_ws/src
-git clone https://github.com/HKPolyU-UAV/MLMapping.git
+git clone https://github.com/PAIR-Lab/MLMapping.git
 ````
 Install 3rd Part library
 ````
